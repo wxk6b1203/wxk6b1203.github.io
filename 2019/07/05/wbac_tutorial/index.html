@@ -1,0 +1,1606 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8" />
+
+<meta name="generator" content="Hexo 3.9.0" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+<title>简注 - A Tutorial on White-box AES - improvedNPC</title>
+
+
+    <meta name="description" content="白盒密码是对非可信平台下的密码算法安全实现的研究。其针对密码学算法在非可信平台设计实现，使得软件（数字内容）在具有完全操控（debugger，assembler）情况下获得安全保护。论文[^1]简要介绍AES在白盒攻击环境 (White-box Attack Context) 下AES的一种实现方式及其密码学分析。">
+<meta name="keywords" content="crypto">
+<meta property="og:type" content="article">
+<meta property="og:title" content="简注 - A Tutorial on White-box AES">
+<meta property="og:url" content="https://blog.wxk.me/2019/07/05/wbac_tutorial/index.html">
+<meta property="og:site_name" content="improvedNPC">
+<meta property="og:description" content="白盒密码是对非可信平台下的密码算法安全实现的研究。其针对密码学算法在非可信平台设计实现，使得软件（数字内容）在具有完全操控（debugger，assembler）情况下获得安全保护。论文[^1]简要介绍AES在白盒攻击环境 (White-box Attack Context) 下AES的一种实现方式及其密码学分析。">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://blog.wxk.me/images/wb.png">
+<meta property="og:updated_time" content="2020-06-02T05:40:16.811Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="简注 - A Tutorial on White-box AES">
+<meta name="twitter:description" content="白盒密码是对非可信平台下的密码算法安全实现的研究。其针对密码学算法在非可信平台设计实现，使得软件（数字内容）在具有完全操控（debugger，assembler）情况下获得安全保护。论文[^1]简要介绍AES在白盒攻击环境 (White-box Attack Context) 下AES的一种实现方式及其密码学分析。">
+<meta name="twitter:image" content="https://blog.wxk.me/images/wb.png">
+
+
+
+
+
+<link rel="alternative" href="/atom.xml" title="简注 - A Tutorial on White-box AES" type="application/atom+xml">
+
+
+
+<link rel="icon" href="/images/icon.png">
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+<style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+
+    
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+
+    
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+    
+    
+    
+    
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-119546531-1"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'UA-119546531-1');
+</script>
+
+    
+    
+    
+    
+    
+    <link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                improvedNPC
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">Home</a>
+                
+                <a class="navbar-item"
+                href="/archives">Archives</a>
+                
+                <a class="navbar-item"
+                href="/categories">Categories</a>
+                
+                <a class="navbar-item"
+                href="/tags">Tags</a>
+                
+                <a class="navbar-item"
+                href="/about">About</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    <a class="navbar-item" target="_blank" rel="noopener" title="Archive on GitHub" href="https://github.com/wxk6b1203/wxk6b1203.github.io">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-6-widescreen has-order-2 column-main">
+<div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="/images/wb.png" alt="简注 - A Tutorial on White-box AES">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-07-05T15:59:59.000Z">2019-07-05</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Cryptography/">Cryptography</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    20 分钟 读完 (大约 2957 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                简注 - A Tutorial on White-box AES
+            
+        </h1>
+        <div class="content">
+            <p>白盒密码是对非可信平台下的密码算法安全实现的研究。其针对密码学算法在非可信平台设计实现，使得软件（数字内容）在具有完全操控（debugger，assembler）情况下获得安全保护。论文[^1]简要介绍AES在白盒攻击环境 (White-box Attack Context) 下AES的一种实现方式及其密码学分析。<br><a id="more"></a></p>
+<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>白盒密码学 (White-box Cryptography) 意图设计特定实现，使得软件、数字资源等在不安全（非受信任）的环境下保护软件、资源的安全。白盒密码设计分析不同于像代码混淆[^2][^3]、控制流混淆这样的反逆向工程机制，它是纯粹针对算法安全性进行设计与分析[^4]。几乎所有的白盒密码学设计都针对对称加密算法，AES的设计就是典型之一。最初的白盒AES、DES由S. Chow，et.al 实现[^5]，后来该算法被攻破。随后不同的学者也相继发明了各种WBAC下的实现。<br>根据Alex, et.al 对白盒的时间进行了分类：<u>强白盒设计</u>与<u>弱白盒设计</u>[^7]。弱白盒设计要求算法实现能保护密钥不可被发现与推导，保护密钥不受密钥恢复攻击(<em>key recovery attack</em>)。这种实现对于查表的逆向推导理论上是不可防护的。强白盒设计要求解密器不可从加密器推导，i.e.,<em>plaintext-recovery attack</em>。chow的实现是白盒的开篇，应该归类为弱白盒实现。</p>
+<h2 id="AES与矩阵查表操作"><a href="#AES与矩阵查表操作" class="headerlink" title="AES与矩阵查表操作"></a>AES与矩阵查表操作</h2><p>AES拥有4个变换：轮钥加 (AddRoundKey)、行变换 (ShiftRows)、列混淆 (MixColumns)、字节替换 (SubBytes)[^6]。这些操作都可以归结为查表操作。查表操作的可逆转性是非常强的，很容易得到原生结果。<br>其中，行变换是线性的，跟轮钥加可以进行位置上的替换。只要先对原有矩阵进行行变换，然后异或行变换过的轮密钥，这样这两个操作跟原有设计结果上没有差别。其次我们可以把第一轮异或加入到循环中，最后一轮异或移出循环。这种数学上的正确性有利于我们对AES查表操作 (table lookup) 性质的解析。<br>得到的结果：</p>
+<figure class="highlight reasonml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">state &lt;- plaintext</span><br><span class="line">for r = <span class="number">1</span> <span class="keyword">to</span> <span class="number">9</span>:</span><br><span class="line">	<span class="constructor">ShiftRows(<span class="params">state</span>)</span></span><br><span class="line">	<span class="constructor">AddRoundKey(<span class="params">state</span>, <span class="params">k1</span>[<span class="params">r</span>-1])</span></span><br><span class="line">	<span class="constructor">SubBytes(<span class="params">state</span>)</span></span><br><span class="line">	<span class="constructor">MixColumns(<span class="params">state</span>)</span></span><br><span class="line"><span class="constructor">ShiftRows(<span class="params">state</span>)</span></span><br><span class="line"><span class="constructor">AddRoundKey(<span class="params">state</span>, <span class="params">k1</span>[9])</span></span><br><span class="line"><span class="constructor">SubBytes(<span class="params">state</span>)</span></span><br><span class="line"><span class="constructor">AddRoundKey(<span class="params">state</span>, <span class="params">k1</span>[10])</span></span><br><span class="line">ciphertext &lt;- state</span><br></pre></td></tr></table></figure>
+<p>其中，<u>k1[r-1]是进行行变换过的轮密钥</u>。</p>
+<p>上述算法描述中，<code>AddRoundKey</code> 和 <code>SubBytes</code> 可以对原有的S-Box合并：</p>
+<h4 id="T-boxes"><a href="#T-boxes" class="headerlink" title="T-boxes"></a>T-boxes</h4><p>$$<br>T^r_i(x) = S(x \oplus k1_{r-1}[i]), (i = 0…15, r=1…9)<br>$$</p>
+<p>$$<br>T^{10}_i(x) = S(x \oplus k1_9[i]) \oplus k1_{10}[i], (i = 0…15)<br>$$</p>
+<p>这又叫<code>AddRoundKey</code> <code>SubBytes</code>构成的 $T-boxes$，其中x代表一个4x4矩阵中的一个字节，i代表第0～15个字节，r是轮次，S是S-Box的查表操作。每轮16个表，一共160表。（矩阵变换）。</p>
+<p><code>MixColumns</code>推导成：</p>
+<h4 id="T-y-i-表"><a href="#T-y-i-表" class="headerlink" title="$T_{y_{i}}$ 表"></a>$T_{y_{i}}$ 表</h4><p>列混淆是纯粹查表变换。将混淆矩阵作用于4x4状态的每一列。<br>MixColumns表：<br>$$<br>MC = \begin{bmatrix} 02 &amp; 03 &amp; 01 &amp; 01 \\ 01 &amp; 02 &amp; 03 &amp; 01 \\ 01 &amp; 01 &amp; 02 &amp; 03 \\ 03 &amp; 01 &amp; 01 &amp; 02 \end{bmatrix}<br>$$<br>列混淆操作为混淆矩阵MC左乘状态矩阵中的每一列，对其进行行变换：<br>$$<br>\begin{bmatrix} 02 &amp; 03 &amp; 01 &amp; 01 \\ 01 &amp; 02 &amp; 03 &amp; 01 \\ 01 &amp; 01 &amp; 02 &amp; 03 \\ 03 &amp; 01 &amp; 01 &amp; 02 \end{bmatrix} \begin{bmatrix} x_0 \\ x_1 \\ x_2 \\ x_3 \end{bmatrix}<br>$$<br><strong>其中$x_i$是一列中的一个字节。</strong></p>
+<p>这等同于MC中每一列在x$下$的线性组合:<br>$$<br>MC \begin{bmatrix} x_0 \\ x_1 \\ x_2 \\ x_3 \end{bmatrix} = x_0 \begin{bmatrix} 02 \\ 01 \\ 01 \\ 03 \end{bmatrix} \oplus x_1 \begin{bmatrix} 03 \\ 02 \\ 01 \\ 01 \end{bmatrix} \oplus x_2 \begin{bmatrix} 01 \\ 02 \\ 02 \\ 01 \end{bmatrix} \oplus x_3 \begin{bmatrix} 01 \\ 01 \\ 03 \\ 02 \end{bmatrix}<br>$$</p>
+<p>将每个字节的求积拆解，即为如下变换相异或：<br>$$<br>T_{y_0} (x) = x \cdot \begin{bmatrix} 02 &amp; 01 &amp; 01 &amp; 03 \end{bmatrix} ^T \\<br>T_{y_1}(x) = x \cdot \begin{bmatrix} 03 &amp; 02 &amp; 01 &amp; 01 \end{bmatrix} ^T<br>$$</p>
+<p>此处的entry x，对应着$x_0, x_1, x_2…$。<br>剩下的好推。</p>
+<p>最后结果应该为：<br>$$<br>T_{y_0}(x_0) \oplus T_{y_1}(x_1) \oplus T_{y_2}(x_2) \oplus T_{y_3}(x_3)<br>$$</p>
+<p>这里，</p>
+<h4 id="XOR-表"><a href="#XOR-表" class="headerlink" title="XOR 表"></a>XOR 表</h4><p>也是需要的。<br>$$<br>XOR(x, y) = x \oplus y<br>$$<br>这里采用<u>4比特表</u>，即x、y为4比特。（为什么要这么做还不太清楚，也许8比特表太大？）则每一列需要32/4 = 8个XOR表，把$T_{y_i}$表变换来的4个32位字异或成32位的最终结果。</p>
+<p>我们把前两个表合并，$f \circ g = f(g(x))$ 就得到TBoxesTyiTables。</p>
+<p>最后算法变成这样：<br><figure class="highlight pf"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">state</span> <span class="variable">&lt;- plaintext</span></span><br><span class="line"><span class="variable">for r = 1 to 9:</span></span><br><span class="line"><span class="variable">	ShiftRows</span></span><br><span class="line"><span class="variable">	TBoxesTyiTables</span></span><br><span class="line"><span class="variable">	XORTables</span></span><br><span class="line"><span class="variable">ShiftRows</span></span><br><span class="line"><span class="variable">Tboxes</span></span><br><span class="line"><span class="variable">ciphertext &lt;- state</span></span><br></pre></td></tr></table></figure></p>
+<p><img src="/images/aes.png" alt="结构图"></p>
+<p>至此，所有的AES矩阵操作归结为查表操作。而查表操作是一对一的，在运行全过程可被监控的情况下，轮密钥很容易被推导。</p>
+<h4 id="疑惑"><a href="#疑惑" class="headerlink" title="疑惑"></a>疑惑</h4><ol>
+<li><p>内存中不直接暴露轮密钥吗（轮密钥不应该存在于内存中吗）？</p>
+<p>不，DRM的加解密操作中，内存中只有相关的表，以此实现加密解密。并非裸密钥（轮密钥）进行。如见<a href="https://github.com/OpenWhiteBox/AES">OpenWhiteBox</a>中，被序列化与被解析的是不同的表，在<code>persistance.go</code>中。<code>key.txt</code>其实是表的二进制表示。其中不包含任何的密钥的原始状态表示。密钥被混合在表中。</p>
+</li>
+<li><p>为什么原生AES-128不安全？</p>
+<p>轮密钥只要有一轮泄漏，就可以推导出整个密钥。根据我们的设定，原生AES中每一轮都可以得到任何读写中间结果。假设$a$是第一轮密钥第一个字节，那么仅有256种枚举方式，可向数据入口插入错误 ，例如0x00000000，只要枚举，或者 $a = S^{-1}\circ T_{y_0}^{-1}\circ (T_{y_0} \circ T^1_0)(0)$，$S$已知，$T_{y_0}^{-1}$可求，这样就可得到这个字节。这样4x4都出来，原生密钥就都出现了。</p>
+</li>
+</ol>
+<h2 id="保护性实现"><a href="#保护性实现" class="headerlink" title="保护性实现"></a>保护性实现</h2><p>针对AES的白盒安全保护，自02年来有很多实现。<a href="https://github.com/OpenWhiteBox/AES">github.com/OpenWhiteBox/AES</a>中有各种实现与密码分析。文[^ 1]描述了最初始的实现：chow‘s implementation。</p>
+<p>chow的实现以输入输出编码(<em>input and output encoding</em>)、mixing bijections的方式来保护AES在WBAC下的安全。这也是许多变种设计过程中使用的思路。</p>
+<blockquote>
+<ul>
+<li>Encodings</li>
+<li>Mixing Bijections</li>
+</ul>
+</blockquote>
+<h4 id="Encodings"><a href="#Encodings" class="headerlink" title="Encodings"></a>Encodings</h4><p>Encodings 意图给原生的表加上内/外的保护，使得在AES做矩阵变换的时候，并不直接地产生裸结果。这可以使得疑惑2条件不成立。这是用来保护TboxTyiTable的。假设原生的$T-Box/T_{y_i}$表为$T$, 现在以$f$为输入编码，$g$为输出编码，构建<br>$$<br>T’ = g \circ T \circ f^{-1}<br>$$<br>内编码不暴露的情况下，攻击者无法从一轮中的中间数据得到相应的映射。或者说，<strong>攻击者没有办法从这个$T’$中获得关于T的信息。</strong>考虑非线性$f$对4比特(one nibble)数据进行encoding，并采用concat的形式联合：<br>$$<br>f(x_0 || x_1) = f_1(x_0) || f_2(x_1),\ x_i\ is\ a\ nibble<br>$$<br>设这种encoding为$O$。$OT$没有泄漏任何关于$T$的信息。4比特可以产生$16!$种不重复的数值变换。对应地，每个字节就是$(16!)^2$种encoding。若加上output encoding, 则为$(16!)^2 (16!)^8$。这枚举是非常困难的。对于目标T表，以及任意非目标的$T’$表，都存在一个非线性映射$O’$, 使得$O’T’ = OT$。爆破理论上是不可行的。</p>
+<p>另外，这种encoding是可以被networked的。不同的表可以被串联起来。这使得内部的推导会更难。<br>在Github.com/OpenWhiteBox/AES/的chow实现中：<br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// tyiEncoding encodes the output of a T-Box/Tyi Table / the input of a HighXORTable.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// All randomness is derived from the random source; round is the current round; position is the byte-wise position in</span></span><br><span class="line"><span class="comment">// the state matrix being stretched; subPosition is the nibble-wise position in the Word table's output.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">tyiEncoding</span><span class="params">(rs *random.Source, round, position, subPosition <span class="keyword">int</span>)</span> <span class="title">encoding</span>.<span class="title">Nibble</span></span> &#123;</span><br><span class="line">	label := <span class="built_in">make</span>([]<span class="keyword">byte</span>, <span class="number">16</span>)</span><br><span class="line">	label[<span class="number">0</span>], label[<span class="number">1</span>], label[<span class="number">2</span>], label[<span class="number">3</span>] = <span class="string">'T'</span>, <span class="keyword">byte</span>(round), <span class="keyword">byte</span>(position), <span class="keyword">byte</span>(subPosition)</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> rs.Shuffle(label)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>对T表的encoding就是4比特的。</p>
+<p>在文[^ 1]的图里，是不包含了encoding部分的。在进行分析的时候我们有意抹去了encoding，因为encoding的安全性来自于外部。这不是算法安全性分析的范畴。 </p>
+<h4 id="Mixing-Bijections"><a href="#Mixing-Bijections" class="headerlink" title="Mixing Bijections"></a>Mixing Bijections</h4><p>Mixing Bijections是加密过程中增加的一个线性变换。用于对TboxTyiTable的扩散。encoding 实现了对密钥的混淆，每一轮中插入的Mixing Bijections则强化了密钥的扩散。被随机选择的Mixing Bijection变换都能够提高AES原生表的复杂性。作用在代码中耦合，会使得查表环节无法从TboxTyiTable的求解依赖于混入双射变换矩阵MB。根据chow的实现，选择一个GF(2)内的可逆矩阵MB，<br>于是我们是这样构造的。<br><!-- <img src="http://139.196.203.106:800/images/2020/04/09/chow.jpg" alt="chow's implementation" style="self-align:center; zoom:60%;" /> --><br><img src="/images/aes2.png" alt=""></p>
+<ol>
+<li>由于第一轮，在输入的时候为明文/密文，这一轮应该用下文提及的外部编码（external encoding）来处理。这一轮的输入端不进行双射混合。</li>
+<li>第2到10轮，选择<u>8比特到8比特的</u>变换矩阵，附加在T表输入之前。</li>
+<li>1～9轮，在T表的输出端加上32-bit到32-bit的映射。</li>
+</ol>
+<p>原来的TboxTyiTable表：<br>$$<br>T_{y_0}\circ T^2_0 \\<br>T_{y_1}\circ T^2_1 \\<br>T_{y_2}\circ T^2_2 \\<br>T_{y_3}\circ T^2_3 \\<br>$$</p>
+<p>现在的$T’$表：<br>$$<br>MB \circ T_{y_0}\circ T^2_0 \circ {L^2_0}^{-1}\ (1) \\<br>MB \circ T_{y_1}\circ T^2_1 \circ {L^2_1}^{-1}\\<br>….<br>$$<br>$L$是8-bit到8-bit的输入mixing bijection, MB是32 -&gt; 32的输出mixing bijection。这些表的最终结果被XOR起来。<br>为了下一轮计算可以进行，(1)中$MB$的效果需要被去除，而需要加上$L$。$MB^{-1}$作用于（1）产生的32bit结果，然后给每一个字节作用上$L^3$（此处为第三轮，所以为$L^3$），则结果可供给下一轮进行。<br>所以，Mixing Bijection的运行过程是，</p>
+<ol>
+<li>8bit$L{-1}$作用于输入$I$，得到$I_1$</li>
+<li>TboxTyiTable作用于$I_1$，得到32bit值</li>
+<li>将4个32bit值XOR，得到中间值$I_2$</li>
+<li>32bit的$I_2$每个字节被$MB^{-1}$作用得到32bit中间值，然后被32-&gt;32$L$进行Mixing Bijection</li>
+<li>4个32bit值XOR成一个32bit，成为下一轮的state</li>
+</ol>
+<h4 id="外部编码"><a href="#外部编码" class="headerlink" title="外部编码"></a>外部编码</h4><p>为了防止裸（raw）的明文到密文，或密文到明文的映射，以保护加密/解密器在特定环境下使用，可以给加密/解密器加上特定的外部编码。假定原来的解密器为$D_k$，则构建<br>$$<br>D’_k = G \circ D_k \circ F^{-1}<br>$$<br>$F$是输入编码，$G$是输出编码。这种方式在特定条件下可以保护DFA攻击[^ 4]。</p>
+<p>[^1]: <a href="https://eprint.iacr.org/2013/104.pdf">James A. Muir, A Tutorial on White-box AES</a><br>[^2]: <a href="http://home.eng.iastate.edu/~daji/seminar/papers/BVS03.UsenixSec.pdf">S. Bhatkar, D. C. DuVarney, R. Sekar, Address obfuscation: an efficient approach to combat a broad range of memory error exploits, in Proceedings of the 12th USENIX Security Symposium. USENIX Association (2003)</a><br>[^3]: C. Linn, S.K. Debray. Obfuscation of executable code to improve resistance to static disassembly, in S. Jajodia, V. Atluri, and T. Jaeger, editors, Proceedings of the 10th ACM Conference on Computer and Communications Security, CCS 2003. ACM (2003), pp. 290–299<br>[^4]: <a href="https://link.springer.com/article/10.1007/s00145-019-09315-1">White-Box Cryptography: Don’t Forget About Grey-Box Attacks</a><br>[^5]: <a href="http://www.bookmetrix.com/detail_full/chapter/de2269fa-625c-443e-9fe3-7ff35f2bc046#citations">WHITE-BOX CRYPTOGRAPHY AND AN AES IMPLEMENTATION</a><br>[^6]: 详见CANSv7<br>[^7]: <a href="https://eprint.iacr.org/2014/474.pdf">Biryukov A, Bouillaguet C, Khovratovich D. Cryptographic schemes based on the ASASA structure: black-box, white-box, and public-key[C]. In: Advances in Cryptology—ASIACRYPT 2014. Springer Berlin Heidelberg, 2014: 63–84.</a><br>[^10]: <a href="https://gongzheng.github.io/">https://gongzheng.github.io/</a></p>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/crypto/">crypto</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+        <div class="social-share"></div>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js@1.0.16/dist/css/share.min.css">
+<script src="https://cdn.jsdelivr.net/npm/social-share.js@1.0.16/dist/js/social-share.min.js"></script>
+        
+    </div>
+</div>
+
+
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2019/07/20/wbac_dfa/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">简注 - Differential Fault Analysis on AES</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2019/03/20/binary_search/">
+                <span class="level-item">LeetCode - 二分查找</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+<div id="comment-container"></div>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1.5.2/dist/gitalk.css">
+<script src="https://cdn.jsdelivr.net/npm/gitalk@1.5.2/dist/gitalk.min.js"></script>
+<script>
+    var gitalk = new Gitalk({
+        clientID: '6319105ed3cd6ab64dc4',
+        clientSecret: 'c54a59d40fc597bb05dff516d96c4cd661704f50',
+        id: 'd80b982a75aa6acdf0f59cb3b7dd9adb',
+        repo: 'blog.wxk.at',
+        owner: 'wxk6b1203',
+        admin: "wxk6b1203",
+        createIssueManually: false,
+        distractionFreeMode: false
+    })
+    gitalk.render('comment-container')
+</script>
+
+    </div>
+</div>
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered" style="flex-shrink: 1">
+                <div>
+                    
+                    <figure class="image is-128x128 has-mb-6">
+                        <img class="" src="/images/avatar1.jpg" alt="improvedNPC">
+                    </figure>
+                    
+                    <p class="is-size-4 is-block">
+                        improvedNPC
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        心存敬畏，方能进退有度
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>广 州</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <a href="/archives">
+                        <p class="title has-text-weight-normal">
+                            31
+                        </p>
+                    </a>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <a href="/categories">
+                        <p class="title has-text-weight-normal">
+                            12
+                        </p>
+                    </a>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <a href="/tags">
+                        <p class="title has-text-weight-normal">
+                            17
+                        </p>
+                    </a>
+                </div>
+            </div>
+        </nav>
+        
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="http://github.com/wxk6b1203" target="_blank" rel="noopener">
+                关注我</a>
+        </div>
+        
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank" rel="noopener"
+                title="Github" href="http://github.com/wxk6b1203">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank" rel="noopener"
+                title="MailMe" href="mailto://i@wxk.me">
+                
+                <i class="far fa-envelope"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank" rel="noopener"
+                title="RSS" href="/atom.xml">
+                
+                <i class="fas fa-rss"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+
+    <div class="card widget" id="toc">
+        <div class="card-content">
+            <div class="menu">
+                <h3 class="menu-label">
+                    目录
+                </h3>
+                <ul class="menu-list"><li>
+        <a class="is-flex" href="#简介">
+        <span class="has-mr-6">1</span>
+        <span>简介</span>
+        </a></li><li>
+        <a class="is-flex" href="#AES与矩阵查表操作">
+        <span class="has-mr-6">2</span>
+        <span>AES与矩阵查表操作</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#T-boxes">
+        <span class="has-mr-6">2.1</span>
+        <span>T-boxes</span>
+        </a></li><li>
+        <a class="is-flex" href="#T-y-i-表">
+        <span class="has-mr-6">2.2</span>
+        <span>$T_{y_{i}}$ 表</span>
+        </a></li><li>
+        <a class="is-flex" href="#XOR-表">
+        <span class="has-mr-6">2.3</span>
+        <span>XOR 表</span>
+        </a></li><li>
+        <a class="is-flex" href="#疑惑">
+        <span class="has-mr-6">2.4</span>
+        <span>疑惑</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#保护性实现">
+        <span class="has-mr-6">3</span>
+        <span>保护性实现</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#Encodings">
+        <span class="has-mr-6">3.1</span>
+        <span>Encodings</span>
+        </a></li><li>
+        <a class="is-flex" href="#Mixing-Bijections">
+        <span class="has-mr-6">3.2</span>
+        <span>Mixing Bijections</span>
+        </a></li><li>
+        <a class="is-flex" href="#外部编码">
+        <span class="has-mr-6">3.3</span>
+        <span>外部编码</span>
+        </a></li></ul></li></ul>
+            </div>
+        </div>
+    </div>
+
+    
+        <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            链接
+        </h3>
+        <ul class="menu-list">
+        
+            <li>
+                <a class="level is-mobile" href="https://h-zex.github.io/"" target="_blank" rel="noopener">
+                    <span class="level-left">
+                        <span class="level-item">h-zex&#39;s blog</span>
+                    </span>
+                    <span class="level-right">
+                        <span class="level-item tag">h-zex.github.io</span>
+                    </span>
+                </a>
+            </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                分类
+            </h3>
+            <ul class="menu-list">
+            <li>
+        <a class="level is-marginless" href="/categories/Algorithms/">
+            <span class="level-start">
+                <span class="level-item">Algorithms</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/CLRS/">
+            <span class="level-start">
+                <span class="level-item">CLRS</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/CS-APP/">
+            <span class="level-start">
+                <span class="level-item">CS:APP</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Cryptography/">
+            <span class="level-start">
+                <span class="level-item">Cryptography</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Huawei/">
+            <span class="level-start">
+                <span class="level-item">Huawei</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/LeetCode/">
+            <span class="level-start">
+                <span class="level-item">LeetCode</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Test-Page/">
+            <span class="level-start">
+                <span class="level-item">Test Page</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/c/">
+            <span class="level-start">
+                <span class="level-item">c++</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/miscellaneous/">
+            <span class="level-start">
+                <span class="level-item">miscellaneous</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/networking/">
+            <span class="level-start">
+                <span class="level-item">networking</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/python/">
+            <span class="level-start">
+                <span class="level-item">python</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/文学杂感/">
+            <span class="level-start">
+                <span class="level-item">文学杂感</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+    
+        <div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            标签云
+        </h3>
+        <a href="/tags/Algorithms/" style="font-size: 20px;">Algorithms</a> <a href="/tags/DFS/" style="font-size: 10px;">DFS</a> <a href="/tags/Data-Structure/" style="font-size: 13.33px;">Data Structure</a> <a href="/tags/HAProxy/" style="font-size: 10px;">HAProxy</a> <a href="/tags/LeetCode/" style="font-size: 10px;">LeetCode</a> <a href="/tags/Nginx/" style="font-size: 10px;">Nginx</a> <a href="/tags/computer-system/" style="font-size: 13.33px;">computer system</a> <a href="/tags/crypto/" style="font-size: 16.67px;">crypto</a> <a href="/tags/ftp/" style="font-size: 10px;">ftp</a> <a href="/tags/homework/" style="font-size: 10px;">homework</a> <a href="/tags/lab/" style="font-size: 13.33px;">lab</a> <a href="/tags/test/" style="font-size: 13.33px;">test</a> <a href="/tags/动态规划/" style="font-size: 13.33px;">动态规划</a> <a href="/tags/发发小癫/" style="font-size: 10px;">发发小癫</a> <a href="/tags/坐标拾取/" style="font-size: 10px;">坐标拾取</a> <a href="/tags/水货软文/" style="font-size: 10px;">水货软文</a> <a href="/tags/网盘系统/" style="font-size: 10px;">网盘系统</a>
+    </div>
+</div>
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+            <div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            最新文章
+        </h3>
+        
+        <article class="media">
+            
+            <a href="/2020/05/05/rip_hwang/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/thumbnail.svg" alt="奠逝去的好战友">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-05-05T06:59:59.000Z">2020-05-05</time></div>
+                    <a href="/2020/05/05/rip_hwang/" class="title has-link-black-ter is-size-6 has-text-weight-normal">奠逝去的好战友</a>
+                    <p class="is-size-7 is-uppercase">
+                        
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2020/03/15/mask-huawei/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/shell.png" alt="华为笔试 - 占位符替换">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-03-15T15:59:59.000Z">2020-03-15</time></div>
+                    <a href="/2020/03/15/mask-huawei/" class="title has-link-black-ter is-size-6 has-text-weight-normal">华为笔试 - 占位符替换</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Huawei/">Huawei</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2020/03/06/spiral-order/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/cta.png" alt="LeetCode 54 - Spiral Order">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-03-06T06:59:59.000Z">2020-03-06</time></div>
+                    <a href="/2020/03/06/spiral-order/" class="title has-link-black-ter is-size-6 has-text-weight-normal">LeetCode 54 - Spiral Order</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/LeetCode/">LeetCode</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2020/03/05/big_num_mul/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/thumbnail.svg" alt="LeetCode 43 - 大数乘法">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-03-05T06:57:59.000Z">2020-03-05</time></div>
+                    <a href="/2020/03/05/big_num_mul/" class="title has-link-black-ter is-size-6 has-text-weight-normal">LeetCode 43 - 大数乘法</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/LeetCode/">LeetCode</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2020/03/01/dca/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/wb.png" alt="DCA - 对AES侧信道分析的总结">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-03-01T15:59:59.000Z">2020-03-01</time></div>
+                    <a href="/2020/03/01/dca/" class="title has-link-black-ter is-size-6 has-text-weight-normal">DCA - 对AES侧信道分析的总结</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Cryptography/">Cryptography</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            归档
+        </h3>
+        <ul class="menu-list">
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">4</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/02/">
+                <span class="level-start">
+                    <span class="level-item">二月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2018/12/">
+                <span class="level-start">
+                    <span class="level-item">十二月 2018</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">3</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2018/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2018</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2018/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2018</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2017/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2017</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">7</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2017/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2017</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">6</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/1970/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 1970</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                标签
+            </h3>
+            <div class="field is-grouped is-grouped-multiline">
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Algorithms/">
+                        <span class="tag">Algorithms</span>
+                        <span class="tag is-grey">6</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/DFS/">
+                        <span class="tag">DFS</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Data-Structure/">
+                        <span class="tag">Data Structure</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/HAProxy/">
+                        <span class="tag">HAProxy</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/LeetCode/">
+                        <span class="tag">LeetCode</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Nginx/">
+                        <span class="tag">Nginx</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/computer-system/">
+                        <span class="tag">computer system</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/crypto/">
+                        <span class="tag">crypto</span>
+                        <span class="tag is-grey">3</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/ftp/">
+                        <span class="tag">ftp</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/homework/">
+                        <span class="tag">homework</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/lab/">
+                        <span class="tag">lab</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/test/">
+                        <span class="tag">test</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/动态规划/">
+                        <span class="tag">动态规划</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/发发小癫/">
+                        <span class="tag">发发小癫</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/坐标拾取/">
+                        <span class="tag">坐标拾取</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/水货软文/">
+                        <span class="tag">水货软文</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/网盘系统/">
+                        <span class="tag">网盘系统</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</div>
+        
+        </div>
+    
+</div>
+
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen is-hidden-touch is-hidden-desktop-only has-order-3 column-right ">
+    
+        <div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            最新文章
+        </h3>
+        
+        <article class="media">
+            
+            <a href="/2020/05/05/rip_hwang/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/thumbnail.svg" alt="奠逝去的好战友">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-05-05T06:59:59.000Z">2020-05-05</time></div>
+                    <a href="/2020/05/05/rip_hwang/" class="title has-link-black-ter is-size-6 has-text-weight-normal">奠逝去的好战友</a>
+                    <p class="is-size-7 is-uppercase">
+                        
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2020/03/15/mask-huawei/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/shell.png" alt="华为笔试 - 占位符替换">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-03-15T15:59:59.000Z">2020-03-15</time></div>
+                    <a href="/2020/03/15/mask-huawei/" class="title has-link-black-ter is-size-6 has-text-weight-normal">华为笔试 - 占位符替换</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Huawei/">Huawei</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2020/03/06/spiral-order/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/cta.png" alt="LeetCode 54 - Spiral Order">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-03-06T06:59:59.000Z">2020-03-06</time></div>
+                    <a href="/2020/03/06/spiral-order/" class="title has-link-black-ter is-size-6 has-text-weight-normal">LeetCode 54 - Spiral Order</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/LeetCode/">LeetCode</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2020/03/05/big_num_mul/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/thumbnail.svg" alt="LeetCode 43 - 大数乘法">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-03-05T06:57:59.000Z">2020-03-05</time></div>
+                    <a href="/2020/03/05/big_num_mul/" class="title has-link-black-ter is-size-6 has-text-weight-normal">LeetCode 43 - 大数乘法</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/LeetCode/">LeetCode</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2020/03/01/dca/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/wb.png" alt="DCA - 对AES侧信道分析的总结">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-03-01T15:59:59.000Z">2020-03-01</time></div>
+                    <a href="/2020/03/01/dca/" class="title has-link-black-ter is-size-6 has-text-weight-normal">DCA - 对AES侧信道分析的总结</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Cryptography/">Cryptography</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+    </div>
+</div>
+    
+        <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            归档
+        </h3>
+        <ul class="menu-list">
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">4</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/02/">
+                <span class="level-start">
+                    <span class="level-item">二月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2018/12/">
+                <span class="level-start">
+                    <span class="level-item">十二月 2018</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">3</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2018/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2018</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2018/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2018</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2017/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2017</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">7</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2017/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2017</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">6</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/1970/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 1970</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+    
+        <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                标签
+            </h3>
+            <div class="field is-grouped is-grouped-multiline">
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Algorithms/">
+                        <span class="tag">Algorithms</span>
+                        <span class="tag is-grey">6</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/DFS/">
+                        <span class="tag">DFS</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Data-Structure/">
+                        <span class="tag">Data Structure</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/HAProxy/">
+                        <span class="tag">HAProxy</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/LeetCode/">
+                        <span class="tag">LeetCode</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Nginx/">
+                        <span class="tag">Nginx</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/computer-system/">
+                        <span class="tag">computer system</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/crypto/">
+                        <span class="tag">crypto</span>
+                        <span class="tag is-grey">3</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/ftp/">
+                        <span class="tag">ftp</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/homework/">
+                        <span class="tag">homework</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/lab/">
+                        <span class="tag">lab</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/test/">
+                        <span class="tag">test</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/动态规划/">
+                        <span class="tag">动态规划</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/发发小癫/">
+                        <span class="tag">发发小癫</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/坐标拾取/">
+                        <span class="tag">坐标拾取</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/水货软文/">
+                        <span class="tag">水货软文</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/网盘系统/">
+                        <span class="tag">网盘系统</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</div>
+    
+    
+</div>
+
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    improvedNPC
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 improvedNPC&nbsp;
+                Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> & <a
+                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+<script>
+var IcarusThemeSettings = {
+    site: {
+        url: 'https://blog.wxk.me',
+        external_link: {"enable":true,"exclude":[]}
+    },
+    article: {
+        highlight: {
+            clipboard: true,
+            fold: 'unfolded'
+        }
+    }
+};
+</script>
+
+
+<script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+
+
+
+
+
+<script src="/js/animation.js"></script>
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+<script src="/js/gallery.js" defer></script>
+
+
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

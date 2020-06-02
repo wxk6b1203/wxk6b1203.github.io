@@ -1,0 +1,1549 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8" />
+
+<meta name="generator" content="Hexo 3.9.0" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+<title>CLRS滑稽导论 (1) : AVL树 - improvedNPC</title>
+
+
+    <meta name="description" content="&amp;emsp;&amp;emsp;在二叉树的学习中，我们会接触到很多不同的树。其中，用得最为普遍的，是二叉搜索树。而为提升二叉树搜索的效率，又引入自平衡二叉树的概念。自平衡二叉搜索树是指通过处理可以实现子树相对平衡，即不极端地偏向一边的二叉搜索树。由于相对平衡的特性，树可以实现查询、插入、删除操作在时间上的优化。">
+<meta name="keywords" content="Data Structure">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CLRS滑稽导论 (1) : AVL树">
+<meta property="og:url" content="https://blog.wxk.me/2017/09/01/AVL-Tree/index.html">
+<meta property="og:site_name" content="improvedNPC">
+<meta property="og:description" content="&amp;emsp;&amp;emsp;在二叉树的学习中，我们会接触到很多不同的树。其中，用得最为普遍的，是二叉搜索树。而为提升二叉树搜索的效率，又引入自平衡二叉树的概念。自平衡二叉搜索树是指通过处理可以实现子树相对平衡，即不极端地偏向一边的二叉搜索树。由于相对平衡的特性，树可以实现查询、插入、删除操作在时间上的优化。">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/AVL-tree-wBalance_K.svg/1054px-AVL-tree-wBalance_K.svg.png">
+<meta property="og:updated_time" content="2020-06-02T05:40:16.794Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="CLRS滑稽导论 (1) : AVL树">
+<meta name="twitter:description" content="&amp;emsp;&amp;emsp;在二叉树的学习中，我们会接触到很多不同的树。其中，用得最为普遍的，是二叉搜索树。而为提升二叉树搜索的效率，又引入自平衡二叉树的概念。自平衡二叉搜索树是指通过处理可以实现子树相对平衡，即不极端地偏向一边的二叉搜索树。由于相对平衡的特性，树可以实现查询、插入、删除操作在时间上的优化。">
+<meta name="twitter:image" content="https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/AVL-tree-wBalance_K.svg/1054px-AVL-tree-wBalance_K.svg.png">
+
+
+
+
+
+<link rel="alternative" href="/atom.xml" title="CLRS滑稽导论 (1) : AVL树" type="application/atom+xml">
+
+
+
+<link rel="icon" href="/images/icon.png">
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+<style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+
+    
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+
+    
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+    
+    
+    
+    
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-119546531-1"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'UA-119546531-1');
+</script>
+
+    
+    
+    
+    
+    
+    <link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                improvedNPC
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">Home</a>
+                
+                <a class="navbar-item"
+                href="/archives">Archives</a>
+                
+                <a class="navbar-item"
+                href="/categories">Categories</a>
+                
+                <a class="navbar-item"
+                href="/tags">Tags</a>
+                
+                <a class="navbar-item"
+                href="/about">About</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    <a class="navbar-item" target="_blank" rel="noopener" title="Archive on GitHub" href="https://github.com/wxk6b1203/wxk6b1203.github.io">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-6-widescreen has-order-2 column-main">
+<div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/AVL-tree-wBalance_K.svg/1054px-AVL-tree-wBalance_K.svg.png" alt="CLRS滑稽导论 (1) : AVL树">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2017-09-01T08:16:59.000Z">2017-09-01</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/CLRS/">CLRS</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    17 分钟 读完 (大约 2570 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                CLRS滑稽导论 (1) : AVL树
+            
+        </h1>
+        <div class="content">
+            <p>&emsp;&emsp;在二叉树的学习中，我们会接触到很多不同的树。其中，用得最为普遍的，是二叉搜索树。而为提升二叉树搜索的效率，又引入自平衡二叉树的概念。自平衡二叉搜索树是指通过处理可以实现子树相对平衡，即不极端地偏向一边的二叉搜索树。由于相对平衡的特性，树可以实现查询、插入、删除操作在时间上的优化。</p>
+<a id="more"></a>
+<p>&emsp;&emsp;AVL树是最早被构造出来的自平衡二叉搜索树。它的构成比较简单，维护的只有树的高度一个因子。同时，对该因子进行修饰，可以演变成维护树的高差。但是……其实，作者提出了这个模型，但并没有指定某种实现。实现的方法很多，但都是在维护它的定义。可以对每个树高进行记录，也可以用平衡因子的方法来标记偏移方向。这里利用树的高差进行处理。其实绝大多数的说法都是平衡因子，但维护的方式不同。只是实现的不同技巧罢了。</p>
+<p>一、定义</p>
+<p>  AVL树的递归定义是，<strong>对于每一个节点的左右子树，他们的高差不超过1</strong>。<br>$$<br>x.h = max(x.left.h, x.right.h)+1<br>$$<br>即：<br>$$<br>|h_l-h_r| \le 1<br>$$<br>这样做的好处是，可以实现树高仅为$O(log\ n)$ 。那么，查询、插入、删除的时间复杂度都类似地为$O(log\ n)$。</p>
+<p><img src="AVL-tree-wBalance_K.svg " width=400 height=300 /></p>
+<p>下面我们来证明时间复杂度应该为$O(log\ n)$。</p>
+<p>如果一棵树是动的，那他的高度就不好处理了。但如果假设是静态的，一切都会好处理得多。我们假设树高为$h$， 则设高为$h$的树的节点数为$N_h$。</p>
+<p>我们定义：$N_h$ 是高为 h 的树中所含有最少的节点（$N_h$ is the min number nodes in an tree of high h），同时<strong>假设左子树比右子树永远高1</strong>。则得出：</p>
+<p>（1）当高度为常数时，时间、空间复杂度也为常数。即：</p>
+<p>$$<br>N_{o(1)} = O(1)<br>$$</p>
+<p>（2）当树的高度为$h$时，</p>
+<p>$$<br>N_h = 1 + N_{h-1}+N_{h-2}<br>$$</p>
+<p>   (3)  我们用它和斐波那契数列进行比较，并利用斐波那契数列的特性进行化简：</p>
+<p>$$<br>N_h = F_h + 1 (F_h \ is\ the \ Fib\ sequence)<br>$$</p>
+<p>$$<br>N_h &gt;  N_{h-1} + N_{h-2} =  F_h \ (F_h \ is\ the \ Fib\ sequence)<br>$$</p>
+<p>而我们知道，斐波那契数列是指数级增长的函数，$F(n) = O(2^n)$</p>
+<p>  依据它的指数边界：</p>
+<p>$$<br>N_h &gt; F_h = \frac{\varphi^h}{\sqrt{5}} = O(2^n)<br>$$</p>
+<p>$$\lim _{h \rightarrow \infty}{N_h} &gt; F_h = \varphi^h$$</p>
+<p>$$<br>log\ N_h = h<br>$$</p>
+<p>that is: </p>
+<p>$$<br>h  = O(log\ n)<br>$$</p>
+<h5 id="自此，AVL树是平衡树的证明结束。只要他是平衡的，那他的查询-query-、删除-delete-、插入-insert-都是对数时间复杂度的。"><a href="#自此，AVL树是平衡树的证明结束。只要他是平衡的，那他的查询-query-、删除-delete-、插入-insert-都是对数时间复杂度的。" class="headerlink" title="自此，AVL树是平衡树的证明结束。只要他是平衡的，那他的查询(query)、删除(delete)、插入(insert)都是对数时间复杂度的。"></a>自此，AVL树是平衡树的证明结束。只要他是平衡的，那他的查询(query)、删除(delete)、插入(insert)都是对数时间复杂度的。</h5><hr>
+<h4 id="然后，我们来一步步用最基础的方式实现它"><a href="#然后，我们来一步步用最基础的方式实现它" class="headerlink" title="然后，我们来一步步用最基础的方式实现它"></a>然后，我们来一步步用最基础的方式实现它</h4><p>既然为二叉搜索树，那么他的搜索过程和普通的搜索树是一样的。作为平衡树，他的关键点在于他的插入与删除。因为插入与删除会改变树的形态。所以，这里我们只描述插入与删除。查询部分，请参阅CLRS v3的第12章。</p>
+<p>首先，我们开始构造一棵树。树的节点要有如下的关键词：左子树、右子树、亲代的指针，树高的平衡因子，节点的权值。树要包含有根节点，空节点（为了方便实现与保护不越界）。</p>
+<p>一个直观的演示：<a href="https://visualgo.net/zh/bst">位于visualgo的链接</a> (要手动调到AVL🌲部分)</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">node</span> &#123;</span></span><br><span class="line">  <span class="keyword">int</span> key;               <span class="comment">// Key</span></span><br><span class="line">  <span class="keyword">int</span> avlK;              <span class="comment">// load balance factor</span></span><br><span class="line">  node *left, *right, *p;<span class="comment">// respective pointers</span></span><br><span class="line">  node() : key(<span class="number">0</span>), avlK(<span class="number">0</span>), left(<span class="literal">NULL</span>), right(<span class="literal">NULL</span>), p(<span class="literal">NULL</span>) &#123;&#125;</span><br><span class="line">  node(<span class="keyword">int</span> key, <span class="keyword">int</span> level = <span class="number">0</span>)</span><br><span class="line">      : key(key), avlK(level), left(<span class="literal">NULL</span>), right(<span class="literal">NULL</span>), p(<span class="literal">NULL</span>) &#123;&#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">AVLtree</span> &#123;</span></span><br><span class="line">  node *root;</span><br><span class="line">  node *nil;</span><br><span class="line">  AVLtree() &#123;</span><br><span class="line">    nil = <span class="keyword">new</span> node(<span class="number">-1</span>, <span class="number">-1</span>);</span><br><span class="line">    root = nil;</span><br><span class="line">    nil-&gt;right = nil;</span><br><span class="line">    nil-&gt;left = nil;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>同时，我们需要一些公用的函数：<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">max</span><span class="params">(<span class="keyword">int</span> a, <span class="keyword">int</span> b)</span> </span>&#123; <span class="keyword">return</span> a &gt; b ? a : b; &#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">inOrder</span><span class="params">(AVLtree &amp;T, node *x)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (x != T.nil) &#123;</span><br><span class="line">        inOrder(T, x-&gt;left);</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">"%d : %d\n"</span>, x-&gt;key, x-&gt;avlK);</span><br><span class="line">        inOrder(T, x-&gt;right);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function">node *<span class="title">getMinPointer</span><span class="params">(AVLtree &amp;T, node *x)</span> </span>&#123;</span><br><span class="line">    node *t = x;</span><br><span class="line">    <span class="keyword">while</span> (t-&gt;left != T.nil) &#123;</span><br><span class="line">        t = t-&gt;left;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> t;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>然后我们来定义旋转。</p>
+<p>旋转是为了降低树的高度，以达到平衡局部的需求。平衡树中的关键步骤都是与旋转有关。旋转包括左旋和右旋，两种方法是对称的。同时，由于AVL树中平衡因子的特性，我们需要修饰旋转后节点的平衡因子。对于AVL树来说，他的平衡可以用平衡因子来调控。</p>
+<p>而这里平衡因子的维护方法是，$ v.h = max(v.left.h,\ v.right.h)+1 $。所以，它<strong>左右子树高差差</strong>区间为$[-2, 2]$。如果恰好遇到有些节点<code>abs(x) == 2</code>，则证明，树的高度需要调节。于是乎通过旋转来达到目的。</p>
+<p><img src="Tree_rotation.png" alt="Tree_rotation"></p>
+<p>以下是旋转部分的代码：（和CLRS v3红黑树的旋转~几乎无异~没有差别）</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// This is the left version. Reverse the direction will be the right version.</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">leftRotate</span><span class="params">(AVLtree &amp;T, node *x)</span> </span>&#123;</span><br><span class="line">    node *y = x-&gt;right;</span><br><span class="line">    x-&gt;right = y-&gt;left;</span><br><span class="line">    <span class="keyword">if</span> (y-&gt;left != T.nil) &#123;</span><br><span class="line">        y-&gt;left-&gt;p = x;</span><br><span class="line">    &#125;</span><br><span class="line">    y-&gt;p = x-&gt;p;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (x-&gt;p == T.nil) &#123;</span><br><span class="line">        T.root = y;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (x == x-&gt;p-&gt;left) &#123;</span><br><span class="line">        x-&gt;p-&gt;left = y;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        x-&gt;p-&gt;right = y;</span><br><span class="line">    &#125;</span><br><span class="line">    y-&gt;left = x;</span><br><span class="line">    x-&gt;p = y;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>右旋：（其实差不多的，就是左旋的逆）</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">rightRotate</span><span class="params">(AVLtree &amp;T, node *x)</span> </span>&#123;</span><br><span class="line">    node *y = x-&gt;left;</span><br><span class="line">    x-&gt;left = y-&gt;right;</span><br><span class="line">    <span class="keyword">if</span> (y-&gt;right != T.nil) &#123;</span><br><span class="line">        y-&gt;right-&gt;p = x;</span><br><span class="line">    &#125;</span><br><span class="line">    y-&gt;p = x-&gt;p;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (x-&gt;p == T.nil) &#123;</span><br><span class="line">        T.root = y;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (x == x-&gt;p-&gt;right) &#123;</span><br><span class="line">        x-&gt;p-&gt;right = y;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        x-&gt;p-&gt;left = y;</span><br><span class="line">    &#125;</span><br><span class="line">    y-&gt;right = x;</span><br><span class="line">    x-&gt;p = y;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>然后处理插入部分。插入部分的开始跟普通二叉搜索树一致，只不过到了插入完毕以后，要向后轮询其平衡因子以修正树的平衡性。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Procedure Insert:</span></span><br><span class="line"><span class="comment"> * <span class="doctag">TODO:</span> insert the target node into one tree.</span></span><br><span class="line"><span class="comment"> * param:</span></span><br><span class="line"><span class="comment"> * T: the target tree</span></span><br><span class="line"><span class="comment"> * ins: the node to be inserted</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">Insert</span><span class="params">(AVLtree &amp;T, node *ins)</span> </span>&#123;</span><br><span class="line">  <span class="comment">// y: trace x's parent;</span></span><br><span class="line">  <span class="comment">// x: trace y's parent;</span></span><br><span class="line">  node *x, *y;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// initalize x, y</span></span><br><span class="line">  y = T.nil;</span><br><span class="line">  x = T.root;</span><br><span class="line">  <span class="keyword">while</span> (x != T.nil) &#123; <span class="comment">// trace the pos</span></span><br><span class="line">    y = x;</span><br><span class="line">    <span class="keyword">if</span> (ins-&gt;key &lt; x-&gt;key) &#123;</span><br><span class="line">      x = x-&gt;left;</span><br><span class="line">    &#125; <span class="keyword">else</span></span><br><span class="line">      x = x-&gt;right;</span><br><span class="line">  &#125;                 <span class="comment">// Go as routinue;</span></span><br><span class="line">  ins-&gt;p = y;       <span class="comment">// Bind its parent</span></span><br><span class="line">  <span class="keyword">if</span> (y == T.nil) &#123; <span class="comment">// Case of only one node</span></span><br><span class="line">    T.root = ins;</span><br><span class="line">    y = T.root;</span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> (ins-&gt;key &lt; y-&gt;key) &#123;</span><br><span class="line">    y-&gt;left = ins;</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    y-&gt;right = ins;</span><br><span class="line">  &#125;</span><br><span class="line">  ins-&gt;left = T.nil;</span><br><span class="line">  ins-&gt;right = T.nil;</span><br><span class="line">  insertFix(T, ins); <span class="comment">// Invoke the fix procedure.</span></span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;          <span class="comment">// Status code. Just persional convention.</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;上面的第34行，转到了修正树的结构的部分。插入之后，树可能遇到平衡问题：左子树比右子树高2（反过来亦然），这样就打破了树的平衡性。可能的情况如下图：</p>
+<p><img src="left_unbalanced_tree.jpg" width=90 height=150 /></p>
+<p>又如：</p>
+<p><img src="right_subtree_of_left_subtree.jpg" width=90 height=150 /></p>
+<p>那么，我们就通过<strong>向上追溯平</strong>衡因子，进而旋转使之平衡。</p>
+<p>对于第一种，我们采用这样的方式：</p>
+<p><img src="avl_right_rotation.jpg" alt="avl_right_rotation"></p>
+<p>然后，我们又发现，第二种情况可以转换变成第一种。</p>
+<p><img src="subtree_left_rotation.jpg" width=90 height=150 /></p>
+<p>嗯。很好。多节点的时候，其实也是相近的。</p>
+<p><strong>这里最困难的地方在于维护平衡因子。既要是其正确表达当前状态下倾斜的方向，又要对相应节点进行旋转。</strong></p>
+<p>所以我们来fix它。<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">insertFix</span><span class="params">(AVLtree &amp;T, node *x)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 务必要小心</span></span><br><span class="line">    <span class="keyword">bool</span> Flag = <span class="number">0</span>;</span><br><span class="line">    node *z = <span class="literal">NULL</span>;</span><br><span class="line">    <span class="keyword">int</span> highTmp = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    node *y = <span class="literal">NULL</span>;</span><br><span class="line">    <span class="keyword">while</span> (x != T.root) &#123;</span><br><span class="line">        Flag = <span class="number">0</span>;</span><br><span class="line">        y = x-&gt;p;</span><br><span class="line">        highTmp++;</span><br><span class="line">        <span class="keyword">if</span> (highTmp &gt; y-&gt;avlK) &#123;</span><br><span class="line">            y-&gt;avlK = highTmp;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (y-&gt;left-&gt;avlK - y-&gt;right-&gt;avlK &gt;= <span class="number">2</span>) &#123;</span><br><span class="line">            Flag = <span class="number">1</span>;</span><br><span class="line">            <span class="keyword">if</span> (x-&gt;right-&gt;avlK &gt; x-&gt;left-&gt;avlK) &#123;</span><br><span class="line">                leftRotate(T, x);</span><br><span class="line">                x-&gt;avlK = <span class="built_in">max</span>(x-&gt;left-&gt;avlK, x-&gt;right-&gt;avlK) + <span class="number">1</span>;</span><br><span class="line">                y-&gt;avlK = <span class="built_in">max</span>(y-&gt;left-&gt;avlK, y-&gt;right-&gt;avlK) + <span class="number">1</span>;</span><br><span class="line">                x = y-&gt;left;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            rightRotate(T, y);</span><br><span class="line">            y-&gt;avlK = <span class="built_in">max</span>(y-&gt;left-&gt;avlK, y-&gt;right-&gt;avlK) + <span class="number">1</span>;</span><br><span class="line">            x-&gt;avlK = <span class="built_in">max</span>(x-&gt;left-&gt;avlK, x-&gt;right-&gt;avlK) + <span class="number">1</span>;</span><br><span class="line">            <span class="comment">// DO Sth</span></span><br><span class="line"></span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (y-&gt;right-&gt;avlK - y-&gt;left-&gt;avlK &gt;= <span class="number">2</span>) &#123;</span><br><span class="line">            Flag = <span class="number">1</span>;</span><br><span class="line">            <span class="keyword">if</span> (x-&gt;left-&gt;avlK &gt; x-&gt;right-&gt;avlK) &#123;</span><br><span class="line">                rightRotate(T, x);</span><br><span class="line">                x-&gt;avlK = <span class="built_in">max</span>(x-&gt;left-&gt;avlK, x-&gt;right-&gt;avlK) + <span class="number">1</span>;</span><br><span class="line">                y-&gt;avlK = <span class="built_in">max</span>(y-&gt;left-&gt;avlK, y-&gt;right-&gt;avlK) + <span class="number">1</span>;</span><br><span class="line">                x = y-&gt;right;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            leftRotate(T, y);</span><br><span class="line"></span><br><span class="line">            y-&gt;avlK = <span class="built_in">max</span>(y-&gt;left-&gt;avlK, y-&gt;right-&gt;avlK) + <span class="number">1</span>;</span><br><span class="line">            x-&gt;avlK = <span class="built_in">max</span>(x-&gt;left-&gt;avlK, x-&gt;right-&gt;avlK) + <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        highTmp = Flag ? x-&gt;avlK : highTmp;</span><br><span class="line">        <span class="keyword">if</span> (x == T.root) &#123;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        x = x-&gt;p;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>这就。。Fix完了。233</p>
+<hr>
+<h4 id="然后就是delete部分，参考红黑树的实现"><a href="#然后就是delete部分，参考红黑树的实现" class="headerlink" title="然后就是delete部分，参考红黑树的实现"></a>然后就是delete部分，参考红黑树的实现</h4><p>&emsp;&emsp;delete部分其实是插入的逆。首先使用正常的二叉搜索树插入，然后再从被抽取的位置开始对其进行fix。<br>&emsp;&emsp;贴代码：<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Procedure: AVL_Delete</span></span><br><span class="line"><span class="comment"> * @param T : AVLtree &amp;</span></span><br><span class="line"><span class="comment"> * @param z : node *</span></span><br><span class="line"><span class="comment"> * @return  : int</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// Now is part of original RB-delete</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">AVL_Delete</span><span class="params">(AVLtree &amp;T, node *z)</span> </span>&#123;</span><br><span class="line">  node *x;</span><br><span class="line">  node *y = z;</span><br><span class="line">  <span class="keyword">int</span> yAVLK = z-&gt;avlK;</span><br><span class="line">  <span class="keyword">if</span> (z-&gt;left == T.nil) &#123;</span><br><span class="line">    x = z-&gt;right;</span><br><span class="line">    AVL_Transplant(T, z, z-&gt;right);</span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> (z-&gt;right == T.nil) &#123;</span><br><span class="line">    x = z-&gt;left;</span><br><span class="line">    AVL_Transplant(T, z, z-&gt;left);</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    y = getMinPointer(T, z-&gt;right);</span><br><span class="line">    x = y-&gt;right;    <span class="comment">// Get the right next pointer &amp; ready to transplant</span></span><br><span class="line">    <span class="keyword">if</span> (y-&gt;p == z) &#123; <span class="comment">// If y &amp; z are adjacant</span></span><br><span class="line">      x-&gt;p = y;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      AVL_Transplant(T, y, y-&gt;right);</span><br><span class="line">      y-&gt;right = z-&gt;right;</span><br><span class="line">      y-&gt;right-&gt;p = y;</span><br><span class="line">    &#125;</span><br><span class="line">    AVL_Transplant(T, z, y);</span><br><span class="line">    y-&gt;left = z-&gt;left;</span><br><span class="line">    y-&gt;left-&gt;p = y;</span><br><span class="line">    y-&gt;avlK = z-&gt;avlK;</span><br><span class="line">  &#125;</span><br><span class="line">  AVLDeleteFix(T, x);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>同样地，从被削减的那个点开始修复。逐步向上更新🌲高。<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">AVLDeleteFix</span><span class="params">(AVLtree &amp;T, node *x)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> highFix = x-&gt;avlK;</span><br><span class="line">  node *y;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">do</span> &#123;</span><br><span class="line">    y = x;</span><br><span class="line">    x = x-&gt;p;</span><br><span class="line">    x-&gt;avlK = <span class="built_in">max</span>(x-&gt;left-&gt;avlK, x-&gt;right-&gt;avlK) + <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">if</span> (x-&gt;left-&gt;avlK - x-&gt;right-&gt;avlK &gt;= <span class="number">2</span>) &#123;</span><br><span class="line">      <span class="keyword">if</span> (y-&gt;right-&gt;avlK &gt; y-&gt;left-&gt;avlK) &#123;</span><br><span class="line">        leftRotate(T, y);</span><br><span class="line">        y-&gt;avlK = <span class="built_in">max</span>(y-&gt;left-&gt;avlK, y-&gt;right-&gt;avlK) + <span class="number">1</span>;</span><br><span class="line">        x-&gt;avlK = <span class="built_in">max</span>(x-&gt;left-&gt;avlK, x-&gt;right-&gt;avlK) + <span class="number">1</span>;</span><br><span class="line">        y = x-&gt;left;</span><br><span class="line">      &#125;</span><br><span class="line">      rightRotate(T, x);</span><br><span class="line">      x-&gt;avlK = <span class="built_in">max</span>(x-&gt;left-&gt;avlK, x-&gt;right-&gt;avlK) + <span class="number">1</span>;</span><br><span class="line">      y-&gt;avlK = <span class="built_in">max</span>(y-&gt;left-&gt;avlK, y-&gt;right-&gt;avlK) + <span class="number">1</span>;</span><br><span class="line">      x = x-&gt;p; <span class="comment">// update pointer</span></span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (x-&gt;right-&gt;avlK - x-&gt;left-&gt;avlK &gt;= <span class="number">2</span>) &#123;</span><br><span class="line">      <span class="keyword">if</span> (y-&gt;left-&gt;avlK &gt; y-&gt;right-&gt;avlK) &#123;</span><br><span class="line">        rightRotate(T, y);</span><br><span class="line">        y-&gt;avlK = <span class="built_in">max</span>(y-&gt;right-&gt;avlK, y-&gt;left-&gt;avlK) + <span class="number">1</span>;</span><br><span class="line">        x-&gt;avlK = <span class="built_in">max</span>(x-&gt;left-&gt;avlK, x-&gt;right-&gt;avlK) + <span class="number">1</span>;</span><br><span class="line">        y = x-&gt;right;</span><br><span class="line">      &#125;</span><br><span class="line">      leftRotate(T, x);</span><br><span class="line">      x-&gt;avlK = <span class="built_in">max</span>(x-&gt;left-&gt;avlK, x-&gt;right-&gt;avlK) + <span class="number">1</span>;</span><br><span class="line">      y-&gt;avlK = <span class="built_in">max</span>(y-&gt;left-&gt;avlK, y-&gt;right-&gt;avlK) + <span class="number">1</span>;</span><br><span class="line">      x = x-&gt;p; <span class="comment">// update pointer</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125; <span class="keyword">while</span> (x != T.root);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>&emsp;&emsp;删除的fix和插入的fix几乎一致，不断向上搜索，更新avl平衡因子，遇到过度倾斜的时候就立刻修复。</p>
+<h5 id="～完啦！～"><a href="#～完啦！～" class="headerlink" title="～完啦！～"></a>～完啦！～</h5><right>转载请联系作者</right>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Data-Structure/">Data Structure</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+        <div class="social-share"></div>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js@1.0.16/dist/css/share.min.css">
+<script src="https://cdn.jsdelivr.net/npm/social-share.js@1.0.16/dist/js/social-share.min.js"></script>
+        
+    </div>
+</div>
+
+
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2017/09/03/for-freshman/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">给17级计科新生的一丁点儿建议</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2017/08/17/file-share-sys-deploy/">
+                <span class="level-item">网盘系统建立啦！</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+<div id="comment-container"></div>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1.5.2/dist/gitalk.css">
+<script src="https://cdn.jsdelivr.net/npm/gitalk@1.5.2/dist/gitalk.min.js"></script>
+<script>
+    var gitalk = new Gitalk({
+        clientID: '6319105ed3cd6ab64dc4',
+        clientSecret: 'c54a59d40fc597bb05dff516d96c4cd661704f50',
+        id: 'a8d42a2ba6769455cc9a06471b26948e',
+        repo: 'blog.wxk.at',
+        owner: 'wxk6b1203',
+        admin: "wxk6b1203",
+        createIssueManually: false,
+        distractionFreeMode: false
+    })
+    gitalk.render('comment-container')
+</script>
+
+    </div>
+</div>
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered" style="flex-shrink: 1">
+                <div>
+                    
+                    <figure class="image is-128x128 has-mb-6">
+                        <img class="" src="/images/avatar1.jpg" alt="improvedNPC">
+                    </figure>
+                    
+                    <p class="is-size-4 is-block">
+                        improvedNPC
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        心存敬畏，方能进退有度
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>广 州</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <a href="/archives">
+                        <p class="title has-text-weight-normal">
+                            31
+                        </p>
+                    </a>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <a href="/categories">
+                        <p class="title has-text-weight-normal">
+                            12
+                        </p>
+                    </a>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <a href="/tags">
+                        <p class="title has-text-weight-normal">
+                            17
+                        </p>
+                    </a>
+                </div>
+            </div>
+        </nav>
+        
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="http://github.com/wxk6b1203" target="_blank" rel="noopener">
+                关注我</a>
+        </div>
+        
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank" rel="noopener"
+                title="Github" href="http://github.com/wxk6b1203">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank" rel="noopener"
+                title="MailMe" href="mailto://i@wxk.me">
+                
+                <i class="far fa-envelope"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank" rel="noopener"
+                title="RSS" href="/atom.xml">
+                
+                <i class="fas fa-rss"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+    
+        <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            链接
+        </h3>
+        <ul class="menu-list">
+        
+            <li>
+                <a class="level is-mobile" href="https://h-zex.github.io/"" target="_blank" rel="noopener">
+                    <span class="level-left">
+                        <span class="level-item">h-zex&#39;s blog</span>
+                    </span>
+                    <span class="level-right">
+                        <span class="level-item tag">h-zex.github.io</span>
+                    </span>
+                </a>
+            </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                分类
+            </h3>
+            <ul class="menu-list">
+            <li>
+        <a class="level is-marginless" href="/categories/Algorithms/">
+            <span class="level-start">
+                <span class="level-item">Algorithms</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/CLRS/">
+            <span class="level-start">
+                <span class="level-item">CLRS</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/CS-APP/">
+            <span class="level-start">
+                <span class="level-item">CS:APP</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Cryptography/">
+            <span class="level-start">
+                <span class="level-item">Cryptography</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Huawei/">
+            <span class="level-start">
+                <span class="level-item">Huawei</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/LeetCode/">
+            <span class="level-start">
+                <span class="level-item">LeetCode</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Test-Page/">
+            <span class="level-start">
+                <span class="level-item">Test Page</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/c/">
+            <span class="level-start">
+                <span class="level-item">c++</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/miscellaneous/">
+            <span class="level-start">
+                <span class="level-item">miscellaneous</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/networking/">
+            <span class="level-start">
+                <span class="level-item">networking</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/python/">
+            <span class="level-start">
+                <span class="level-item">python</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/文学杂感/">
+            <span class="level-start">
+                <span class="level-item">文学杂感</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+    
+        <div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            标签云
+        </h3>
+        <a href="/tags/Algorithms/" style="font-size: 20px;">Algorithms</a> <a href="/tags/DFS/" style="font-size: 10px;">DFS</a> <a href="/tags/Data-Structure/" style="font-size: 13.33px;">Data Structure</a> <a href="/tags/HAProxy/" style="font-size: 10px;">HAProxy</a> <a href="/tags/LeetCode/" style="font-size: 10px;">LeetCode</a> <a href="/tags/Nginx/" style="font-size: 10px;">Nginx</a> <a href="/tags/computer-system/" style="font-size: 13.33px;">computer system</a> <a href="/tags/crypto/" style="font-size: 16.67px;">crypto</a> <a href="/tags/ftp/" style="font-size: 10px;">ftp</a> <a href="/tags/homework/" style="font-size: 10px;">homework</a> <a href="/tags/lab/" style="font-size: 13.33px;">lab</a> <a href="/tags/test/" style="font-size: 13.33px;">test</a> <a href="/tags/动态规划/" style="font-size: 13.33px;">动态规划</a> <a href="/tags/发发小癫/" style="font-size: 10px;">发发小癫</a> <a href="/tags/坐标拾取/" style="font-size: 10px;">坐标拾取</a> <a href="/tags/水货软文/" style="font-size: 10px;">水货软文</a> <a href="/tags/网盘系统/" style="font-size: 10px;">网盘系统</a>
+    </div>
+</div>
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+            <div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            最新文章
+        </h3>
+        
+        <article class="media">
+            
+            <a href="/2020/05/05/rip_hwang/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/thumbnail.svg" alt="奠逝去的好战友">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-05-05T06:59:59.000Z">2020-05-05</time></div>
+                    <a href="/2020/05/05/rip_hwang/" class="title has-link-black-ter is-size-6 has-text-weight-normal">奠逝去的好战友</a>
+                    <p class="is-size-7 is-uppercase">
+                        
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2020/03/15/mask-huawei/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/shell.png" alt="华为笔试 - 占位符替换">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-03-15T15:59:59.000Z">2020-03-15</time></div>
+                    <a href="/2020/03/15/mask-huawei/" class="title has-link-black-ter is-size-6 has-text-weight-normal">华为笔试 - 占位符替换</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Huawei/">Huawei</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2020/03/06/spiral-order/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/cta.png" alt="LeetCode 54 - Spiral Order">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-03-06T06:59:59.000Z">2020-03-06</time></div>
+                    <a href="/2020/03/06/spiral-order/" class="title has-link-black-ter is-size-6 has-text-weight-normal">LeetCode 54 - Spiral Order</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/LeetCode/">LeetCode</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2020/03/05/big_num_mul/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/thumbnail.svg" alt="LeetCode 43 - 大数乘法">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-03-05T06:57:59.000Z">2020-03-05</time></div>
+                    <a href="/2020/03/05/big_num_mul/" class="title has-link-black-ter is-size-6 has-text-weight-normal">LeetCode 43 - 大数乘法</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/LeetCode/">LeetCode</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2020/03/01/dca/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/wb.png" alt="DCA - 对AES侧信道分析的总结">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-03-01T15:59:59.000Z">2020-03-01</time></div>
+                    <a href="/2020/03/01/dca/" class="title has-link-black-ter is-size-6 has-text-weight-normal">DCA - 对AES侧信道分析的总结</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Cryptography/">Cryptography</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            归档
+        </h3>
+        <ul class="menu-list">
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">4</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/02/">
+                <span class="level-start">
+                    <span class="level-item">二月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2018/12/">
+                <span class="level-start">
+                    <span class="level-item">十二月 2018</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">3</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2018/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2018</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2018/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2018</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2017/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2017</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">7</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2017/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2017</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">6</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/1970/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 1970</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                标签
+            </h3>
+            <div class="field is-grouped is-grouped-multiline">
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Algorithms/">
+                        <span class="tag">Algorithms</span>
+                        <span class="tag is-grey">6</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/DFS/">
+                        <span class="tag">DFS</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Data-Structure/">
+                        <span class="tag">Data Structure</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/HAProxy/">
+                        <span class="tag">HAProxy</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/LeetCode/">
+                        <span class="tag">LeetCode</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Nginx/">
+                        <span class="tag">Nginx</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/computer-system/">
+                        <span class="tag">computer system</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/crypto/">
+                        <span class="tag">crypto</span>
+                        <span class="tag is-grey">3</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/ftp/">
+                        <span class="tag">ftp</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/homework/">
+                        <span class="tag">homework</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/lab/">
+                        <span class="tag">lab</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/test/">
+                        <span class="tag">test</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/动态规划/">
+                        <span class="tag">动态规划</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/发发小癫/">
+                        <span class="tag">发发小癫</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/坐标拾取/">
+                        <span class="tag">坐标拾取</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/水货软文/">
+                        <span class="tag">水货软文</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/网盘系统/">
+                        <span class="tag">网盘系统</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</div>
+        
+        </div>
+    
+</div>
+
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen is-hidden-touch is-hidden-desktop-only has-order-3 column-right ">
+    
+        <div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            最新文章
+        </h3>
+        
+        <article class="media">
+            
+            <a href="/2020/05/05/rip_hwang/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/thumbnail.svg" alt="奠逝去的好战友">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-05-05T06:59:59.000Z">2020-05-05</time></div>
+                    <a href="/2020/05/05/rip_hwang/" class="title has-link-black-ter is-size-6 has-text-weight-normal">奠逝去的好战友</a>
+                    <p class="is-size-7 is-uppercase">
+                        
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2020/03/15/mask-huawei/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/shell.png" alt="华为笔试 - 占位符替换">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-03-15T15:59:59.000Z">2020-03-15</time></div>
+                    <a href="/2020/03/15/mask-huawei/" class="title has-link-black-ter is-size-6 has-text-weight-normal">华为笔试 - 占位符替换</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Huawei/">Huawei</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2020/03/06/spiral-order/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/cta.png" alt="LeetCode 54 - Spiral Order">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-03-06T06:59:59.000Z">2020-03-06</time></div>
+                    <a href="/2020/03/06/spiral-order/" class="title has-link-black-ter is-size-6 has-text-weight-normal">LeetCode 54 - Spiral Order</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/LeetCode/">LeetCode</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2020/03/05/big_num_mul/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/thumbnail.svg" alt="LeetCode 43 - 大数乘法">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-03-05T06:57:59.000Z">2020-03-05</time></div>
+                    <a href="/2020/03/05/big_num_mul/" class="title has-link-black-ter is-size-6 has-text-weight-normal">LeetCode 43 - 大数乘法</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/LeetCode/">LeetCode</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2020/03/01/dca/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/wb.png" alt="DCA - 对AES侧信道分析的总结">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-03-01T15:59:59.000Z">2020-03-01</time></div>
+                    <a href="/2020/03/01/dca/" class="title has-link-black-ter is-size-6 has-text-weight-normal">DCA - 对AES侧信道分析的总结</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Cryptography/">Cryptography</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+    </div>
+</div>
+    
+        <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            归档
+        </h3>
+        <ul class="menu-list">
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">4</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/02/">
+                <span class="level-start">
+                    <span class="level-item">二月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2018/12/">
+                <span class="level-start">
+                    <span class="level-item">十二月 2018</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">3</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2018/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2018</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2018/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2018</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2017/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2017</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">7</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2017/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2017</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">6</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/1970/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 1970</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+    
+        <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                标签
+            </h3>
+            <div class="field is-grouped is-grouped-multiline">
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Algorithms/">
+                        <span class="tag">Algorithms</span>
+                        <span class="tag is-grey">6</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/DFS/">
+                        <span class="tag">DFS</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Data-Structure/">
+                        <span class="tag">Data Structure</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/HAProxy/">
+                        <span class="tag">HAProxy</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/LeetCode/">
+                        <span class="tag">LeetCode</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Nginx/">
+                        <span class="tag">Nginx</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/computer-system/">
+                        <span class="tag">computer system</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/crypto/">
+                        <span class="tag">crypto</span>
+                        <span class="tag is-grey">3</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/ftp/">
+                        <span class="tag">ftp</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/homework/">
+                        <span class="tag">homework</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/lab/">
+                        <span class="tag">lab</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/test/">
+                        <span class="tag">test</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/动态规划/">
+                        <span class="tag">动态规划</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/发发小癫/">
+                        <span class="tag">发发小癫</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/坐标拾取/">
+                        <span class="tag">坐标拾取</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/水货软文/">
+                        <span class="tag">水货软文</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/网盘系统/">
+                        <span class="tag">网盘系统</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</div>
+    
+    
+</div>
+
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    improvedNPC
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 improvedNPC&nbsp;
+                Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> & <a
+                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+<script>
+var IcarusThemeSettings = {
+    site: {
+        url: 'https://blog.wxk.me',
+        external_link: {"enable":true,"exclude":[]}
+    },
+    article: {
+        highlight: {
+            clipboard: true,
+            fold: 'unfolded'
+        }
+    }
+};
+</script>
+
+
+<script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+
+
+
+
+
+<script src="/js/animation.js"></script>
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+<script src="/js/gallery.js" defer></script>
+
+
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

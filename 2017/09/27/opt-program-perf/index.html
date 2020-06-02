@@ -1,0 +1,1745 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8" />
+
+<meta name="generator" content="Hexo 3.9.0" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+<title>CS: APP CH5：编译器/处理器视角的程序优化 - improvedNPC</title>
+
+
+    <meta name="description" content="借banner以表达对MC的热爱。。。(￣▽￣)v0.1: initial commitv0.1.1: 感谢小神师兄的提醒与指导！  CS: APP 第五章从编译器与处理器的角度，利用c语言实现，描述了程序通用的优化方法。这种通用的方法的度量因不同处理器而异，但策略是相似的。除开算法上的优化，基于机器的系数级优化是本章的重点。我们利用CPE(Cycle Per Element)来度量程序的执行效率">
+<meta name="keywords" content="computer system">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CS: APP CH5：编译器&#x2F;处理器视角的程序优化">
+<meta property="og:url" content="https://blog.wxk.me/2017/09/27/opt-program-perf/index.html">
+<meta property="og:site_name" content="improvedNPC">
+<meta property="og:description" content="借banner以表达对MC的热爱。。。(￣▽￣)v0.1: initial commitv0.1.1: 感谢小神师兄的提醒与指导！  CS: APP 第五章从编译器与处理器的角度，利用c语言实现，描述了程序通用的优化方法。这种通用的方法的度量因不同处理器而异，但策略是相似的。除开算法上的优化，基于机器的系数级优化是本章的重点。我们利用CPE(Cycle Per Element)来度量程序的执行效率">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://blog.wxk.me/images/mcb.jpg">
+<meta property="og:updated_time" content="2020-06-02T05:40:16.803Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="CS: APP CH5：编译器&#x2F;处理器视角的程序优化">
+<meta name="twitter:description" content="借banner以表达对MC的热爱。。。(￣▽￣)v0.1: initial commitv0.1.1: 感谢小神师兄的提醒与指导！  CS: APP 第五章从编译器与处理器的角度，利用c语言实现，描述了程序通用的优化方法。这种通用的方法的度量因不同处理器而异，但策略是相似的。除开算法上的优化，基于机器的系数级优化是本章的重点。我们利用CPE(Cycle Per Element)来度量程序的执行效率">
+<meta name="twitter:image" content="https://blog.wxk.me/images/mcb.jpg">
+
+
+
+
+
+<link rel="alternative" href="/atom.xml" title="CS: APP CH5：编译器/处理器视角的程序优化" type="application/atom+xml">
+
+
+
+<link rel="icon" href="/images/icon.png">
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+<style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+
+    
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+
+    
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+    
+    
+    
+    
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-119546531-1"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'UA-119546531-1');
+</script>
+
+    
+    
+    
+    
+    
+    <link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                improvedNPC
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">Home</a>
+                
+                <a class="navbar-item"
+                href="/archives">Archives</a>
+                
+                <a class="navbar-item"
+                href="/categories">Categories</a>
+                
+                <a class="navbar-item"
+                href="/tags">Tags</a>
+                
+                <a class="navbar-item"
+                href="/about">About</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    <a class="navbar-item" target="_blank" rel="noopener" title="Archive on GitHub" href="https://github.com/wxk6b1203/wxk6b1203.github.io">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-6-widescreen has-order-2 column-main">
+<div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="/images/mcb.jpg" alt="CS: APP CH5：编译器/处理器视角的程序优化">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2017-09-27T02:16:13.000Z">2017-09-27</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/CS-APP/">CS:APP</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    42 分钟 读完 (大约 6345 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                CS: APP CH5：编译器/处理器视角的程序优化
+            
+        </h1>
+        <div class="content">
+            <h6 id="借banner以表达对MC的热爱。。。-￣▽￣"><a href="#借banner以表达对MC的热爱。。。-￣▽￣" class="headerlink" title="借banner以表达对MC的热爱。。。(￣▽￣)"></a>借banner以表达对MC的热爱。。。(￣▽￣)</h6><p>v0.1: initial commit<br>v0.1.1: 感谢小神师兄的提醒与指导！</p>
+<hr>
+<p><em>CS: APP</em> 第五章从编译器与处理器的角度，利用c语言实现，描述了程序通用的优化方法。这种通用的方法的度量因不同处理器而异，但策略是相似的。除开算法上的优化，基于机器的<strong>系数级</strong>优化是本章的重点。我们利用CPE(Cycle Per Element)来度量程序的执行效率，以4代 core i7-47x0 以及 GCC4.8.x 为样例机器，通过多种方式来对程序进行系数级优化。<br><a id="more"></a><br><a href="https://fs.wxk.es/f/096b4ca037f441fca236/?dl=1">没有书的同学点这里……</a>（第二版与第三版类似，尽管我们用的是第三版）</p>
+<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>&emsp;&emsp;对程序进行系数级的优化，如书中所说，是一件非常magic的事情。有些看上去可能有所优化的东西，其实对程序并没有太大的影响；而有些微不足道的动作，可能就带来巨大的性能提升。因此，我们需要不断尝试，不断寻找最优解，最后判定优化的瓶颈在哪里。这是算法理论与实现细节的结合，需要多方面的寻找最佳的解决方案。<br>&emsp;&emsp;理解编译器与处理器的运行特点，从而进行程序优化是本章的主题。书中针对编译器与处理器两个方面提出了不同的解决方案。这两个方案在实践中同等重要，各自有不同的意义。通过对编译器动作的了解，我们可以了解哪里可以让编译器产生优秀的汇编指令，减少PC跳转，以及不必要的内存访问或其他操作，这种操作是不取决于机器种类的；通过对处理器的了解，我们可以减少数据依赖，以达到最大的数据平行计算(parallelism)，追求最高的运行速度。我们通过不断修改自己的代码，从而达到一个模块化与高效性之间的平衡。<br><img src="plot1.png" alt="Figure5.2 redux"></p>
+<h2 id="程序效率的表达"><a href="#程序效率的表达" class="headerlink" title="程序效率的表达"></a>程序效率的表达</h2><p>&emsp;&emsp;由于程序效率跟处理数据的速度有关，对于程序的效率，书中用了“CPE”的单位来表达。即”Cycles per element”。取处理每个元素所需的处理器周期作为指标。通常，我们会取一组数字进行曲线拟合，获取一次多项式拟合的斜率作为衡量指标：CPE。(Figure5.2)<br>&emsp;&emsp;这里的周期，是指<strong>完成一个元素处理所需要的平均周期</strong>。在对这个元素进行处理的时候，需要的周期越短，速度就越快。<br>$$<br>CPE = \frac{cycles}{element}<br>$$<br>&emsp;&emsp;在图5.2中，psum1的CPE是9.0， psum2的是6.0。可见，面对不同的策略，显然效率有所不同。<br>&emsp;&emsp;这里的周期，是指<strong>完成一个元素处理所需要的平均周期</strong>。在对这个元素进行处理的时候，需要的周期越短，速度就越快。同时，衡量一个程序是否优化到瓶颈，还需要更多的衡量标准。现有的衡量标准，是在一定的CPU指标的基础上进行度量。我们的样例CPU(Core i7 4e)的性能进行分析也是如此。<br>度量的方法有：</p>
+<ul>
+<li>单位耗时(latency): 做连续同一种运算时，每次运算所需消耗的时间。</li>
+<li>吞吐量极限(throuput bound): 跟CPU的吞吐能力有关</li>
+<li>处理时间(issue time): 每条指令处理时间</li>
+<li>处理容量(capability): 与CPU功能单元有关的能力</li>
+</ul>
+<p>例如：（单位：CPE）</p>
+<table>
+<thead>
+<tr>
+<th>op</th>
+<th>Latency</th>
+<th>Issue</th>
+<th>capacity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>float addition</td>
+<td>3</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr>
+<td>int addition</td>
+<td>3</td>
+<td>1</td>
+<td>4</td>
+</tr>
+<tr>
+<td>float multiplication</td>
+<td>5</td>
+<td>1</td>
+<td>2</td>
+</tr>
+</tbody>
+</table>
+<p>这些指标跟CPU以及程序的运行状态息息相关，因为它们标志着处理器的能力极限。也就是说，越接近处理器本身的极限，程序优化得就越好。其中latency bound是一个常用的极限，然后throughput bound是最终得极限。<br>有了这样的基准之后，我们就可以测试程序的运行效率了。同时，在编译的时候<strong>我们开启 -O1 优化开关，利用优化前后的比较观察优化效果。</strong></p>
+<h2 id="编译器视角的优化"><a href="#编译器视角的优化" class="headerlink" title="编译器视角的优化"></a>编译器视角的优化</h2><p>&emsp;&emsp;从编译器的视角优化，意思是写出能让编译器能产生更高效的汇编指令的代码。在这个层面上，我们就需要理解编译器所做的工作。</p>
+<h4 id="编译器的能力与障碍"><a href="#编译器的能力与障碍" class="headerlink" title="编译器的能力与障碍"></a>编译器的能力与障碍</h4><p>&emsp;&emsp;现代编译器大多数情况下会用复杂的算法分析我们的代码并进行优化。同时，它通常附带有<code>-Og</code>,<code>-O1</code>等优化开关，允许我们决定优化的激进程度。这种编译编译器取决的优化工作我们很难进行处理。然而，许多工作都是原有的优化无法完成的，这些无法完成的工作称之为“优化障碍”( <em>optimization blockers</em> )。这种优化障碍在编译器层面是无可避免的，因为只它会在<strong>安全的基础上</strong>优化我们的代码，使其在汇编层面上更加高效。<br>for example:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">twiddle1</span><span class="params">(<span class="keyword">long</span> *xp, <span class="keyword">long</span> *yp)</span> </span>&#123;</span><br><span class="line">    *xp += *yp;</span><br><span class="line">    *xp += *yp;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">twiddle2</span><span class="params">(<span class="keyword">long</span> *xp, <span class="keyword">long</span> *yp)</span> </span>&#123;</span><br><span class="line">    *xp += <span class="number">2</span> * *yp;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>&emsp;&emsp;显然，<code>twiddle1</code>相对于<code>twiddle2</code>低效，因为第一个进行了6次内存访存，第二个进行了3次。然编译编译器并不会把第一种优化成第二种，因为涉及到了内存别名(memory aliasing)问题。若第一次输入的参数为(xp, xp), 则两次运算都只是对xp进行操作。这样产生的效果，或副作用(side effact)就与<code>twiddle2</code>不一致。这种<strong>改变行为的优化，编译器不会做</strong>。<br>&emsp;&emsp;不仅如此，在函数调用方面，大多数编译器也不会判断一个函数是否造成了副作用。因此在优化的时候总是以最坏情况来做，即保留原有的函数调用。如：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">long</span> <span class="title">f</span><span class="params">()</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">long</span> <span class="title">func1</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> f()+ f()+ f()+ f();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">long</span> <span class="title">func2</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">4</span> * f();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>&emsp;&emsp;编译器不会把第一种优化以达到第二种的效果，它会保留函数调用，每次触发就进行一次跳转，返回。因为它不会预测<code>f()</code>是否改变了什么。</p>
+<p>&emsp;&emsp;不过，其中的一个小插曲是，尽管编译器通常有优化开关，例如在优化参数为<code>-O2</code>的甚至更高时候，编译器就会更加激进地修饰代码，但这样就提高了潜在的副作用上的风险。<br>&emsp;&emsp;举个书本外的例子：<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;cstdint&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> count</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> count 2000</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="function">__inline__ <span class="keyword">uint64_t</span> <span class="title">perf_counter</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">uint32_t</span> lo, hi;</span><br><span class="line">    <span class="comment">// take time stamp counter, rdtscp does serialize by itself, and is much</span></span><br><span class="line">    <span class="comment">// cheaper than using CPUID</span></span><br><span class="line">    __asm__ __volatile__(<span class="string">"rdtscp"</span> : <span class="string">"=a"</span>(lo), <span class="string">"=d"</span>(hi));</span><br><span class="line">    <span class="keyword">return</span> ((<span class="keyword">uint64_t</span>)lo) | (((<span class="keyword">uint64_t</span>)hi) &lt;&lt; <span class="number">32</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> a[count];</span><br><span class="line">    <span class="keyword">uint64_t</span> t1 = perf_counter();</span><br><span class="line">    <span class="keyword">while</span> (i++ &lt; count / <span class="number">3</span>) &#123;</span><br><span class="line">        a[<span class="number">3</span> * i - <span class="number">3</span>] = <span class="number">11</span>;</span><br><span class="line">        a[<span class="number">3</span> * i - <span class="number">2</span>] = <span class="number">11</span>;</span><br><span class="line">        a[<span class="number">3</span> * i - <span class="number">1</span>] = <span class="number">111</span>;</span><br><span class="line">        a[<span class="number">3</span> * i] = <span class="number">121</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">uint64_t</span> t2 = perf_counter();</span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; t2 - t1 &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>&emsp;&emsp;这个程序嵌入了一段汇编代码，以读取执行<code>while</code>循环前后的CPU周期差值。当默认优化或者为<code>-O1</code>的时候，程序正常输出周期差；但如果开启了<code>-O2</code>（在Apple clang 8.0.0 下），情况就不一样了。输出的并不是我们想要的结果。</p>
+<p>&emsp;&emsp;鉴于此，我们就有在编译器层面上优化的思路了。</p>
+<p>在书中我们多次使用了下面这个程序样本：这是一个向量的实现，效果类似于c++ STL里面的vector：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> OP *</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> IDENT 1</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* Create vector of specified length */</span></span><br><span class="line"><span class="function">vec_ptr <span class="title">new_vec</span><span class="params">(<span class="keyword">long</span> len)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* Retrieve vector element and store at dest */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">get_vec_element</span><span class="params">(vec_ptr v, <span class="keyword">long</span> index, <span class="keyword">data_t</span> *dest)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* Return lenght of  */</span></span><br><span class="line"><span class="function"><span class="keyword">long</span> <span class="title">vec_length</span><span class="params">(vec_ptr v)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">combine1</span><span class="params">(vec_ptr v, <span class="keyword">data_t</span> *dest)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">long</span> i;</span><br><span class="line"></span><br><span class="line">    *dest = IDENT;</span><br><span class="line">    <span class="keyword">for</span>(i = <span class="number">0</span>; i &lt; vec_length(v); i++) &#123;</span><br><span class="line">        <span class="keyword">data_t</span> val;</span><br><span class="line">        get_vec_element(v, i, &amp;val);</span><br><span class="line">        *dest = *dest OP val;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>&emsp;&emsp;<u>全章基本上都沿用这样的个例子的延伸，所以我们的阐述也围绕它进行。</u></p>
+<p>在这里，我们可以做的工作有：</p>
+<ul>
+<li>优化循环效率</li>
+<li>降低过程调用</li>
+<li>去除不必要的内存访问</li>
+</ul>
+<p>这三项工作是相辅相成的，它们的结合才会有最优的结果。</p>
+<h4 id="1-1-优化循环效率"><a href="#1-1-优化循环效率" class="headerlink" title="1.1 优化循环效率"></a>1.1 优化循环效率</h4><p>&emsp;&emsp;从<code>combine1</code>中我们不难观察到，对整个combine函数影响最大的是 for 循环。因为它是函数的功能主题。通过观测可以得到书本上的值：</p>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Page</th>
+<th>Method</th>
+<th>+ (int)</th>
+<th>* (int)</th>
+<th>+(float)</th>
+<th>*  (float)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>combine1</td>
+<td>507</td>
+<td>-Og</td>
+<td>22.68</td>
+<td>20.02</td>
+<td>19.98</td>
+<td>20.18</td>
+</tr>
+<tr>
+<td>combine1</td>
+<td>507</td>
+<td>-O1</td>
+<td>10.12</td>
+<td>10.12</td>
+<td>10.17</td>
+<td>11.14</td>
+</tr>
+</tbody>
+</table>
+<p>也就是说，combine1在开启O1的时候，CPE是10.12到11.17之间。但如果改变了循环的方式，就可以得到更好的结果。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Retrieve vector element and store at dest.</span></span><br><span class="line"><span class="comment"> * Return 0 (out of bounds) or 1 (successful)</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">get_vec_element</span><span class="params">(vec_ptr v, <span class="keyword">long</span> index, <span class="keyword">data_t</span> *dest)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (index &lt; <span class="number">0</span> || index &gt;= v-&gt;len)</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    *dest = v-&gt;data[index];</span><br><span class="line">    <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* Move call to vec_length out of loop */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">combine2</span><span class="params">(vec_ptr v, <span class="keyword">data_t</span> *dest)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i;</span><br><span class="line">    <span class="keyword">int</span> length = vec_length(v);</span><br><span class="line">    <span class="keyword">for</span>(i = <span class="number">0</span>; i &lt; length; i++)&#123;</span><br><span class="line">        <span class="keyword">data_t</span> val;</span><br><span class="line">        get_vec_element(v, i, &amp;val);</span><br><span class="line">        *dest = *dest OP val;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在这种策略下，这个函数的CPE可以得到一定的提升。</p>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Page</th>
+<th>Method</th>
+<th>+ (int)</th>
+<th>* (int)</th>
+<th>+(float)</th>
+<th>*  (float)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>combine1</td>
+<td>507</td>
+<td>-O1</td>
+<td>10.12</td>
+<td>10.12</td>
+<td>10.17</td>
+<td>11.14</td>
+</tr>
+<tr>
+<td>combine2</td>
+<td>509</td>
+<td>Move vec_length</td>
+<td>7.02</td>
+<td>9.03</td>
+<td>9.02</td>
+<td>11.03</td>
+</tr>
+</tbody>
+</table>
+<p>这里的函数和<code>combine1()</code>明显不同的是，每次循环调用的<code>vec_length()</code>移到了外部。这是一种<strong>代码移动</strong>(code motion)工作，意图将循环无关变量<code>vec_length(v)</code>在外部进行初始化以达到优化效果，因而又称为<em>loop invariant code motion</em>。</p>
+<blockquote>
+<p>Loop-invariant code which has been hoisted out of a loop is executed less often, providing a speedup. We can therefore move the computation to an earlier section of the code that does not get evaluated as often. <a href="https://en.wikipedia.org/wiki/Loop-invariant_code_motion">wikipedia: Loop-invariant code motion</a></p>
+<p><em>在这里感谢小神师兄的指正。此处因为代码移动而非代码修饰，修饰可以参阅ECMAScript 6的【修饰器】部分</em></p>
+</blockquote>
+<p>&emsp;&emsp;这种编译器因为可能的副作用问题不会而不会做的优化需要我们自己做。在此，就需要辨别一些循环中被计算多遍但却不会变的过程计算。第一个过程中，对于每次循环，都会调用一次<code>vec_length()</code> 函数。修改后的代码只调用了一次 <code>vec_length</code> 。这样，循环就减少了函数调用，去除了重复的长度计算，降低了耗时。</p>
+<p>这种排除循环无关变量重复迭代的方法有时候效果是显著的。甚至极端情况下可以避免潜在的渐近时间复杂度提升。一个极端的例子：<br><code>string.h</code> 中有叫<code>strlen()</code>的函数，它通过遍历每一个字符来获取字符串的长度。如果我把函数调用放在循环里：<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> <span class="keyword">char</span> str[]=<span class="string">"VeryGG!!!"</span>;</span><br><span class="line"><span class="keyword">for</span>(<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="built_in">strlen</span>(str); i++) &#123;</span><br><span class="line">    <span class="comment">// statement</span></span><br><span class="line">    <span class="comment">// O(n)</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>&emsp;&emsp;虽然看上去没毛病，但其实这里就已经有个潜在的 $O(n^2)$ 。因为<code>strlen()</code>的机制，每次循环都要遍历整个字符串，加上原始的 $O(n)$ ，那就成了一个<strong>指数渐进</strong>的循环。而<strong>这种低效对程序效率的影响是致命的，它会严重拉低程序的效率。</strong></p>
+<p>&emsp;&emsp;两种循环的效率大概如下图：</p>
+<p><img src="f5.2.png" alt="figure of origin loop and enhanced loop"></p>
+<p>&emsp;&emsp;为何这样渺小的修改可以得到效率的提高呢？这就需要理解编译器的工作。编译器在编译第一个函数的时候，对于每次循环，都会调用一次 <code>vec_length()</code> 函数。修改后的代码只调用了一次 <code>vec_length</code> 函数。这样，循环就减少了函数调用，降低了耗时。<br>&emsp;&emsp;这种做法确实加快了运行速度。然而，这种代码移动并非编译器都会为开发者完成。因为修改前后可能面临着结果不同的问题，也就是副作用(site effact)问题。如果一个函数在优化前和优化后对于预料，或者说任何结果都是没有差异的，那优化就是有效的。但面对这种做法的时候，遇到指针别名问题(Pointer Aliasing)等问题时，结果是会出现差异的。尽管编译器试图采用代码移动，但局限性导致其采取了保守的策略。在优化参数为<code>-O2</code>的甚至更高时候，编译器就会更加激进移动代码，但这样就提高了潜在的副作用上的风险。</p>
+<h4 id="降低过程调用"><a href="#降低过程调用" class="headerlink" title="降低过程调用"></a>降低过程调用</h4><p>降低过程调用的意图非常明显。过程调用中因常出现重复计算或检索问题(overhead)而导致低效。<br>例如下列过程调用：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* get_vec_start */</span></span><br><span class="line"><span class="function"><span class="keyword">data_t</span> *<span class="title">get_vec_start</span><span class="params">(vec_ptr v)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> v-&gt;data;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* Direct access to vector data */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">combine3</span><span class="params">(vec_ptr v, <span class="keyword">data_t</span> *dest)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">long</span> i;</span><br><span class="line">    <span class="keyword">long</span> length = vec_length(v);</span><br><span class="line">    <span class="keyword">data_t</span> *data = get_vec_start(v);</span><br><span class="line">    *dest = IDENT;  <span class="comment">// identical element</span></span><br><span class="line">    <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; length; i++) &#123;</span><br><span class="line">        *dest = *dest OP data[i]; <span class="comment">// OP refer to + or *</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p><code>combine3</code>的for 比<code>combine2</code>中的高效，因为<code>combine2</code>中每次检索数据都要将向量遍历一遍（成功或失败都类似）。此处通过将读取容器元素的过程改写为直接访问地址，从而降低过程调用，提高了效率。这种<strong>直接的地址访问</strong>降低了过程运行的成本。类似的降低过程调用的工作几近优化程序的瓶颈。</p>
+<h4 id="1-3-减少内存访问"><a href="#1-3-减少内存访问" class="headerlink" title="1.3 减少内存访问"></a>1.3 减少内存访问</h4><p>&emsp;&emsp;内存访问的速度比寄存器访问慢很多，这是……正常人都知道的常识。减少内存访问，即利用临时(循环)变量来替代直接的指针迭代。如果每一次迭代都通过指针解引用来更改所指的数据，那即意味着每次都要从内存读取写入（这只是通用的直观的说法，更复杂的情况应该在处理器视角参数）。这样相对于直接的变量迭代效率一定是低下的。<br>&emsp;&emsp;有几种很常见的状况：</p>
+<ul>
+<li>指针作为迭代变量</li>
+<li>指针搜索与位移</li>
+</ul>
+<p>&emsp;&emsp;在这里就不举例子了，自己意会哈～</p>
+<h4 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h4><p>&emsp;&emsp;通过了解编译器的能力与限制，我们就可以对症下药，而不是盲目地降低程序的可读性与模块化程度，给自己和他人的理解带来困扰，破坏软件工程的基本原则。在现代足够智能的编译器的情况下，认识到在这个视角能干什么显得非常必要。</p>
+<h2 id="处理器视角的优化"><a href="#处理器视角的优化" class="headerlink" title="处理器视角的优化"></a>处理器视角的优化</h2><p>&emsp;&emsp;处理器视角优化，相对于前者而言，是在机器层面上的优化。不同的机器有不同的特点，所以要根据机器来处理细节。但是，在不失一般性的情况下，具有相似的策略。所以，我们就根据样本机器来分析。不同机器就要有细节上的修饰。<br>&emsp;&emsp;现代处理器和第四章的流水线模型也有很大的不同。现代乱序处理器更复杂。现代乱序处理器简单区分呢ICU（Instruction Control Unit）和EU（Executive Unit）。<br><img src="plot2.png" alt="out-of-order processor"><br>&emsp;&emsp;总的来说，现代CPU有能力超前地获取即将运行的数据与指令，并利用分支预测，进行提前演算，在分支语句被执行的时候决定是否运行、写入。存储与加载在cache存在的情况下，也有能力超前地fetch数据。在此其中，在数据处理的速度方面，最主要关系的就是EU中的功能单元——处理单一state的基础模块。一个CPU中可能有多个这样的模块，而这些模块能否最大化并行地运作，运作结果是否有效，很大程度上决定了程序能否高效运行。而数据能否在处理器层面并行地运算，又与数据的依赖程度有关。数据超前运算是否生效，又与分支预测的结果相关。因此，</p>
+<ul>
+<li>尽量在数据上降低依赖程度，实现并行处理的最大化，</li>
+<li>降低分支预测错误概率，避免误判的时间高消耗，</li>
+</ul>
+<p>我们就有机会写出高效运行的代码。</p>
+<p>&emsp;&emsp;我们在这一章节上的讨论，基于 Intel i7 Haswell 这一样本机器。它拥有8个功能单元，基本情况是：</p>
+<ol start="0">
+<li>Integer arithmetic, floating-point multiplication, integer and floating-point division, branches</li>
+<li>Integer arithmetic, floating-point addition, integer multiplication, floating-point multiplication</li>
+<li>Load, address computation</li>
+<li>Load, address computation</li>
+<li>Store</li>
+<li>Integer arithmetic</li>
+<li>Integer arithmetic, branches</li>
+<li>Store address computation</li>
+</ol>
+<p>在这样的情况下，可以实现的效果：</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Latency</th>
+<th>Issue</th>
+<th>Capacity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>(integer)</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Addition</td>
+<td>1</td>
+<td>1</td>
+<td>4</td>
+</tr>
+<tr>
+<td>Multiplication</td>
+<td>3</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr>
+<td>Division</td>
+<td>3-30</td>
+<td>3-30</td>
+<td>1</td>
+</tr>
+<tr>
+<td>(floating point)</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Addition</td>
+<td>3</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr>
+<td>Multiplication</td>
+<td>5</td>
+<td>1</td>
+<td>2</td>
+</tr>
+<tr>
+<td>Capacity</td>
+<td>3-15</td>
+<td>3-15</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<p>&emsp;&emsp;根据这样详细的定义，排除cache方面可能的干扰，我们就可以在样本机上量化计算了。</p>
+<p>书中对于降低依赖程度有如下方法：</p>
+<ul>
+<li>循环解元(loop unrolling)</li>
+<li>提高平行性(enhancing Parallelism)</li>
+</ul>
+<p>对于降低跳转误判概率，解释比较简略，即<strong>尽量让编译器生成<code>CMOV</code>的代码，而不是<code>JMP</code></strong>。</p>
+<p>在此之前，我们要有一定的语言与方法来判断数据（指令）的依赖性，以及指令的执行流程。因此运用了数据流程图(Data-flow graph)这么个方法解释。如，对于书中的combine4，汇编的结果为：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">combine4: data_t = float, OP = *</span><br><span class="line">i in %rdx, data in %rax, limit in %rbp, acc in %xmm0</span><br><span class="line">.L488:</span><br><span class="line">  mulss  (%rax, %rdx, 4), %xmm0   # Multiply acc by data[i]</span><br><span class="line">  addq   $1, %rdx                 # Increment i</span><br><span class="line">  cmpq   %rd, %rbp                # Compare limit:i</span><br><span class="line">  jg     .L488                    # If &gt;, goto loop</span><br></pre></td></tr></table></figure></p>
+<p>得到的data-flow graph为：<br>![屏幕快照 2017-11-03 下午10.12.35.png][5]<br>经过重新编排，我们就可以知晓数据之间的依赖性。<br>![20171103.png][6]<br>所以在这个函数里头，load-&gt;mul是一条主要时间线，这一次迭代的主要影响就跟乘法相关。</p>
+<p>在这样的语言表示下，我们就有办法解释为什么循环解元与平行增强对程序起优化作用了。</p>
+<h5 id="循环解元-loop-unrolling"><a href="#循环解元-loop-unrolling" class="headerlink" title="循环解元(loop unrolling)"></a>循环解元(loop unrolling)</h5><p>&emsp;&emsp;loop unrolling的思路是，<strong>通过在计算上的分步运行并最终合并结果，实现提高一次循环中CPE的效果</strong>。简而言之，就是将一次循环所能做的元素修改提高。其实在这个方法上与增强平行性是相辅相成的，因为分开进行运算意味着更充分地使用了有效的function unit。</p>
+<p>举个🌰：<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">combine</span><span class="params">(<span class="keyword">int</span> arr[<span class="number">10</span>])</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i, acc = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span>(i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++) &#123;</span><br><span class="line">        acc += arr[i];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> acc;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>这种情况下，效率是1x线性的，因为每次处理一个元素。稍加修饰，就可以变得约为2倍。<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">combine</span><span class="params">(<span class="keyword">int</span> arr[n])</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> it = n / <span class="number">2</span> * <span class="number">2</span>;</span><br><span class="line">    <span class="keyword">int</span> i, acc = <span class="number">0</span>, acc1 = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span>(i = <span class="number">0</span>; i &lt; it; i+=<span class="number">2</span>) &#123;</span><br><span class="line">        acc += arr[i];</span><br><span class="line">        acc1 += arr[i+<span class="number">1</span>];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">for</span>(;i &lt; n; i++) &#123;</span><br><span class="line">    acc += arr[i];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> acc + acc1;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>&emsp;&emsp;这样的代码修饰，实现了<strong>一次迭代中并行地处理2个数据</strong>。因为<code>acc</code>与<code>acc1</code>没有耦合，处理器可以并行地进行计算。如此修改，提高了处理单元上的并行性，因为样本机器一次可处理的4个加法，大于目前的所需并行计算数目，速度约为原来的2x。然这种k-degree并非越大越好，因为unrolling后如果degree太高，会产生加载、计算上的等待，造成debuff。</p>
+<h4 id="依赖解绑"><a href="#依赖解绑" class="headerlink" title="依赖解绑"></a>依赖解绑</h4><p>&emsp;&emsp;依赖解绑的意思是，可以分开算的数据，就不要使其出现依赖关系。因为一旦没有依赖，可以并行地计算。for example，</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">calcu</span><span class="params">(<span class="keyword">int</span> arr1[n], <span class="keyword">int</span> x)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> tmp = <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">int</span> acc = arr1[<span class="number">0</span>];</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i = <span class="number">1</span>; i &lt; n; i++) &#123;</span><br><span class="line">        tmp *= x;</span><br><span class="line">        acc += arr[i] * tmp;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> acc;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;这是经典的输入一个多项式以及x，输出运算结果的函数。它没有经过解元的操作，以便我们的讲解。因此，它的效率是较为一般的。然而，另一种，依据秦九韶算法:</p>
+<p>$$<br>a_0 + x(a_1 + x(a_2+…+ x(a_{n-1} + xa_n)…))<br>$$<br>即：<br><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">calcu1</span><span class="params">(<span class="keyword">int</span> arr1[n], <span class="keyword">int</span> x)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i;</span><br><span class="line">    <span class="comment">// int tmp = x;</span></span><br><span class="line">    <span class="keyword">int</span> acc = arr1[n];</span><br><span class="line">    <span class="keyword">for</span> ( i = n - <span class="number">1</span>; i &gt;= <span class="number">0</span>; i--) &#123;</span><br><span class="line">        acc = arr1[i] + x * acc;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> acc;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p><strong>这种写法是及其低效的！</strong>现代处理器在cache的帮助下，可以在上一次循环的时候就加载下一次循环中所需要的数据；而修改后的代码<u>每一次的运算都基于上一次的结果，产生了一个<em>load-use</em> dependency; 而前一个函数中，<code>tmp</code> 和 <code>acc</code> 是独立开来的，他们的运算是并行的，而且每次算好只要加载进入下一次循环即可立即使用。</u>。这样，就会把load的时间插在了use的前面，而不是独立开来。也就是说：<br><figure class="highlight gherkin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">改变之前：(运行时间）</span><br><span class="line">+-----+ +----+</span><br><span class="line">|<span class="string"> cal </span>|<span class="string"> </span>|<span class="string"> ld </span>|</span><br><span class="line">|<span class="string">     </span>|<span class="string"> </span>|<span class="string">    </span>|</span><br><span class="line">|<span class="string">     </span>|<span class="string"> </span>|<span class="string">    </span>|</span><br><span class="line">|<span class="string">     </span>|<span class="string"> +----+</span></span><br><span class="line">|<span class="string">     </span>|<span class="string"> +----+</span></span><br><span class="line">|<span class="string">     </span>|<span class="string"> </span>|<span class="string"> ld </span>|</span><br><span class="line">+-----+ |<span class="string">    </span>|</span><br><span class="line">+-----+ |<span class="string">    </span>|</span><br><span class="line">|<span class="string"> cal </span>|<span class="string"> +----+</span></span><br><span class="line">|<span class="string">     </span>|<span class="string"> </span></span><br><span class="line">|<span class="string">     </span>|</span><br><span class="line">|<span class="string">     </span>|<span class="string"> </span></span><br><span class="line">|<span class="string">     </span>|</span><br><span class="line">|<span class="string">     </span>|</span><br><span class="line">+-----+</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">改变之后：(运行时间）</span><br><span class="line">+-----+</span><br><span class="line">|<span class="string"> cal </span>|</span><br><span class="line">|<span class="string">     </span>|</span><br><span class="line">|<span class="string">     </span>|</span><br><span class="line">|<span class="string">     </span>|</span><br><span class="line">|<span class="string">     </span>|</span><br><span class="line">|<span class="string">     </span>|</span><br><span class="line">+-----+</span><br><span class="line">+-----+</span><br><span class="line">|<span class="string">     </span>|</span><br><span class="line">|<span class="string">  ld </span>|</span><br><span class="line">|<span class="string">     </span>|</span><br><span class="line">+-----+</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight gherkin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">  ||<span class="string">        arr[n]      x</span></span><br><span class="line"><span class="string">  </span>||<span class="string">         </span>||<span class="string">        </span>|<span class="string"> </span>|</span><br><span class="line">+-----+  +--------+  +-----+</span><br><span class="line">|<span class="string"> acc </span>|<span class="string">  </span>|<span class="string"> arr[n] </span>|<span class="string">  </span>|<span class="string">  x  </span>|</span><br><span class="line">|<span class="string">     </span>|<span class="string">  </span>|<span class="string"> (load) </span>|<span class="string">  </span>|<span class="string">     </span>|</span><br><span class="line">+-----+  +--------+  +-----+</span><br><span class="line">  ||<span class="string">         </span>||<span class="string">________</span>|<span class="string"> </span>|</span><br><span class="line">  ||<span class="string">         </span>|<span class="string">___________</span>|</span><br><span class="line">  ||<span class="string">               </span>||<span class="string">  </span>|<span class="string"> </span>|</span><br><span class="line">  ||<span class="string">_____(calcu)___</span>||<span class="string">  </span>|<span class="string"> </span>|</span><br><span class="line">  |<span class="string">_________________</span>|<span class="string">  </span>|<span class="string"> </span>|</span><br><span class="line">  ||<span class="string">                   </span>|<span class="string"> </span>|</span><br><span class="line">  ||<span class="string">                   </span>|<span class="string"> </span>|</span><br><span class="line">+-----+  +--------+  +-----+</span><br><span class="line">|<span class="string"> acc </span>|<span class="string">  </span>|<span class="string"> arr[n] </span>|<span class="string">  </span>|<span class="string">  x  </span>|</span><br><span class="line">|<span class="string">     </span>|<span class="string">  </span>|<span class="string"> (load) </span>|<span class="string">  </span>|<span class="string">     </span>|</span><br><span class="line">+-----+  +--------+  +-----+</span><br></pre></td></tr></table></figure>
+<p>load-use独立开来，时间就取决于use，而不是 load + use。这就是高效之处。<br><strong>由此可知，上述两种方法相互依赖。结合使用，才能有效地进行系数级别的优化。</strong></p>
+<h4 id="减少跳转"><a href="#减少跳转" class="headerlink" title="减少跳转"></a>减少跳转</h4><p>&emsp;&emsp;减少跳转的关键在于，使得代码尽量使用<code>CMOV</code>, 而不是<code>JMP</code>。因为JMP涉及了PC更改以及预运算清空问题，产生了时延（参考第4章中PIPE的实现）。例如，可以用三目运算符处理的，不用<code>if...else</code>；尽量用inline等。现代处理器已经可以90%做出准确判断，例如循环的实现，不必产生任何跳转。只有在循环结束、条件函数调用的时候，才可能产生跳转。因此，这方面我们能做的比较少。</p>
+<h2 id="优化的限制因素"><a href="#优化的限制因素" class="headerlink" title="优化的限制因素"></a>优化的限制因素</h2><h4 id="寄存器个数限制"><a href="#寄存器个数限制" class="headerlink" title="寄存器个数限制"></a>寄存器个数限制</h4><p>&emsp;&emsp;寄存器的个数决定了一次可以load的数量。一旦 loop unrolling 过度，超过了寄存器可以承载的数量，就会产生penalties。这个比较好理解。</p>
+<h4 id="跳转问题"><a href="#跳转问题" class="headerlink" title="跳转问题"></a>跳转问题</h4><p>&emsp;&emsp;跳转问题通常无法解决，因为取决于处理器的算法问题。但我们可以尽量使得其产生CMOV的代码，处理器会分别计算然后加载所需要的数值。这样就免除了跳转中产生的时延。</p>
+<h2 id="未竟之处"><a href="#未竟之处" class="headerlink" title="未竟之处"></a>未竟之处</h2><p>书本对优化的阐述依然留下了一些问题。例如，我们假设处理器是单核的，而现代处理器一般都有多核运行；同时，也没有考虑多线程、多进程问题。然在我们阐述的模型基础上，我们可以预测可以做到的更多的操作。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>&emsp;&emsp;<em>CS:APP</em> 第5章根据编译器和处理器的特性，描述了一个完整的程序优化蓝图。现代的编译器已经足够智能，善于尽可能地产生最优的代码；现代处理器也同样如此，会尽量地跑满所有的功能单元。而我们需要做的，就是完成编译器、处理器无法完成的工作，解决数据搜寻中的低效问题，解绑数据依赖，从而让机器能够在数据安全的情况下，在 function unit 层面上并行地计算。如此针对性地进行优化，而不是做类似于 <code>i / 2</code> 改成 <code>i &gt;&gt; 2</code> ，以及将函数融合到一起之类的的动作，我们就可以在尽量不降低程序模块与可读性上，真正达到优化的目的，而不是既没有提高效率，又使得代码不必要地丑陋。</p>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/computer-system/">computer system</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+        <div class="social-share"></div>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js@1.0.16/dist/css/share.min.css">
+<script src="https://cdn.jsdelivr.net/npm/social-share.js@1.0.16/dist/js/social-share.min.js"></script>
+        
+    </div>
+</div>
+
+
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2018/05/05/static_route_lab/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">计网-静态路由实验解析</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2017/09/22/lla/">
+                <span class="level-item">坐标地址拾取器</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+<div id="comment-container"></div>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1.5.2/dist/gitalk.css">
+<script src="https://cdn.jsdelivr.net/npm/gitalk@1.5.2/dist/gitalk.min.js"></script>
+<script>
+    var gitalk = new Gitalk({
+        clientID: '6319105ed3cd6ab64dc4',
+        clientSecret: 'c54a59d40fc597bb05dff516d96c4cd661704f50',
+        id: '00b9df1b3c1e19ce36197590967ff097',
+        repo: 'blog.wxk.at',
+        owner: 'wxk6b1203',
+        admin: "wxk6b1203",
+        createIssueManually: false,
+        distractionFreeMode: false
+    })
+    gitalk.render('comment-container')
+</script>
+
+    </div>
+</div>
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered" style="flex-shrink: 1">
+                <div>
+                    
+                    <figure class="image is-128x128 has-mb-6">
+                        <img class="" src="/images/avatar1.jpg" alt="improvedNPC">
+                    </figure>
+                    
+                    <p class="is-size-4 is-block">
+                        improvedNPC
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        心存敬畏，方能进退有度
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>广 州</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <a href="/archives">
+                        <p class="title has-text-weight-normal">
+                            31
+                        </p>
+                    </a>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <a href="/categories">
+                        <p class="title has-text-weight-normal">
+                            12
+                        </p>
+                    </a>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <a href="/tags">
+                        <p class="title has-text-weight-normal">
+                            17
+                        </p>
+                    </a>
+                </div>
+            </div>
+        </nav>
+        
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="http://github.com/wxk6b1203" target="_blank" rel="noopener">
+                关注我</a>
+        </div>
+        
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank" rel="noopener"
+                title="Github" href="http://github.com/wxk6b1203">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank" rel="noopener"
+                title="MailMe" href="mailto://i@wxk.me">
+                
+                <i class="far fa-envelope"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank" rel="noopener"
+                title="RSS" href="/atom.xml">
+                
+                <i class="fas fa-rss"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+    
+        <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            链接
+        </h3>
+        <ul class="menu-list">
+        
+            <li>
+                <a class="level is-mobile" href="https://h-zex.github.io/"" target="_blank" rel="noopener">
+                    <span class="level-left">
+                        <span class="level-item">h-zex&#39;s blog</span>
+                    </span>
+                    <span class="level-right">
+                        <span class="level-item tag">h-zex.github.io</span>
+                    </span>
+                </a>
+            </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                分类
+            </h3>
+            <ul class="menu-list">
+            <li>
+        <a class="level is-marginless" href="/categories/Algorithms/">
+            <span class="level-start">
+                <span class="level-item">Algorithms</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/CLRS/">
+            <span class="level-start">
+                <span class="level-item">CLRS</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/CS-APP/">
+            <span class="level-start">
+                <span class="level-item">CS:APP</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Cryptography/">
+            <span class="level-start">
+                <span class="level-item">Cryptography</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Huawei/">
+            <span class="level-start">
+                <span class="level-item">Huawei</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/LeetCode/">
+            <span class="level-start">
+                <span class="level-item">LeetCode</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Test-Page/">
+            <span class="level-start">
+                <span class="level-item">Test Page</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/c/">
+            <span class="level-start">
+                <span class="level-item">c++</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/miscellaneous/">
+            <span class="level-start">
+                <span class="level-item">miscellaneous</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/networking/">
+            <span class="level-start">
+                <span class="level-item">networking</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/python/">
+            <span class="level-start">
+                <span class="level-item">python</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/文学杂感/">
+            <span class="level-start">
+                <span class="level-item">文学杂感</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+    
+        <div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            标签云
+        </h3>
+        <a href="/tags/Algorithms/" style="font-size: 20px;">Algorithms</a> <a href="/tags/DFS/" style="font-size: 10px;">DFS</a> <a href="/tags/Data-Structure/" style="font-size: 13.33px;">Data Structure</a> <a href="/tags/HAProxy/" style="font-size: 10px;">HAProxy</a> <a href="/tags/LeetCode/" style="font-size: 10px;">LeetCode</a> <a href="/tags/Nginx/" style="font-size: 10px;">Nginx</a> <a href="/tags/computer-system/" style="font-size: 13.33px;">computer system</a> <a href="/tags/crypto/" style="font-size: 16.67px;">crypto</a> <a href="/tags/ftp/" style="font-size: 10px;">ftp</a> <a href="/tags/homework/" style="font-size: 10px;">homework</a> <a href="/tags/lab/" style="font-size: 13.33px;">lab</a> <a href="/tags/test/" style="font-size: 13.33px;">test</a> <a href="/tags/动态规划/" style="font-size: 13.33px;">动态规划</a> <a href="/tags/发发小癫/" style="font-size: 10px;">发发小癫</a> <a href="/tags/坐标拾取/" style="font-size: 10px;">坐标拾取</a> <a href="/tags/水货软文/" style="font-size: 10px;">水货软文</a> <a href="/tags/网盘系统/" style="font-size: 10px;">网盘系统</a>
+    </div>
+</div>
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+            <div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            最新文章
+        </h3>
+        
+        <article class="media">
+            
+            <a href="/2020/05/05/rip_hwang/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/thumbnail.svg" alt="奠逝去的好战友">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-05-05T06:59:59.000Z">2020-05-05</time></div>
+                    <a href="/2020/05/05/rip_hwang/" class="title has-link-black-ter is-size-6 has-text-weight-normal">奠逝去的好战友</a>
+                    <p class="is-size-7 is-uppercase">
+                        
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2020/03/15/mask-huawei/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/shell.png" alt="华为笔试 - 占位符替换">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-03-15T15:59:59.000Z">2020-03-15</time></div>
+                    <a href="/2020/03/15/mask-huawei/" class="title has-link-black-ter is-size-6 has-text-weight-normal">华为笔试 - 占位符替换</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Huawei/">Huawei</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2020/03/06/spiral-order/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/cta.png" alt="LeetCode 54 - Spiral Order">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-03-06T06:59:59.000Z">2020-03-06</time></div>
+                    <a href="/2020/03/06/spiral-order/" class="title has-link-black-ter is-size-6 has-text-weight-normal">LeetCode 54 - Spiral Order</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/LeetCode/">LeetCode</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2020/03/05/big_num_mul/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/thumbnail.svg" alt="LeetCode 43 - 大数乘法">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-03-05T06:57:59.000Z">2020-03-05</time></div>
+                    <a href="/2020/03/05/big_num_mul/" class="title has-link-black-ter is-size-6 has-text-weight-normal">LeetCode 43 - 大数乘法</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/LeetCode/">LeetCode</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2020/03/01/dca/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/wb.png" alt="DCA - 对AES侧信道分析的总结">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-03-01T15:59:59.000Z">2020-03-01</time></div>
+                    <a href="/2020/03/01/dca/" class="title has-link-black-ter is-size-6 has-text-weight-normal">DCA - 对AES侧信道分析的总结</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Cryptography/">Cryptography</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            归档
+        </h3>
+        <ul class="menu-list">
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">4</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/02/">
+                <span class="level-start">
+                    <span class="level-item">二月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2018/12/">
+                <span class="level-start">
+                    <span class="level-item">十二月 2018</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">3</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2018/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2018</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2018/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2018</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2017/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2017</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">7</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2017/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2017</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">6</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/1970/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 1970</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+        
+            <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                标签
+            </h3>
+            <div class="field is-grouped is-grouped-multiline">
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Algorithms/">
+                        <span class="tag">Algorithms</span>
+                        <span class="tag is-grey">6</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/DFS/">
+                        <span class="tag">DFS</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Data-Structure/">
+                        <span class="tag">Data Structure</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/HAProxy/">
+                        <span class="tag">HAProxy</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/LeetCode/">
+                        <span class="tag">LeetCode</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Nginx/">
+                        <span class="tag">Nginx</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/computer-system/">
+                        <span class="tag">computer system</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/crypto/">
+                        <span class="tag">crypto</span>
+                        <span class="tag is-grey">3</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/ftp/">
+                        <span class="tag">ftp</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/homework/">
+                        <span class="tag">homework</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/lab/">
+                        <span class="tag">lab</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/test/">
+                        <span class="tag">test</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/动态规划/">
+                        <span class="tag">动态规划</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/发发小癫/">
+                        <span class="tag">发发小癫</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/坐标拾取/">
+                        <span class="tag">坐标拾取</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/水货软文/">
+                        <span class="tag">水货软文</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/网盘系统/">
+                        <span class="tag">网盘系统</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</div>
+        
+        </div>
+    
+</div>
+
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen is-hidden-touch is-hidden-desktop-only has-order-3 column-right ">
+    
+        <div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            最新文章
+        </h3>
+        
+        <article class="media">
+            
+            <a href="/2020/05/05/rip_hwang/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/thumbnail.svg" alt="奠逝去的好战友">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-05-05T06:59:59.000Z">2020-05-05</time></div>
+                    <a href="/2020/05/05/rip_hwang/" class="title has-link-black-ter is-size-6 has-text-weight-normal">奠逝去的好战友</a>
+                    <p class="is-size-7 is-uppercase">
+                        
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2020/03/15/mask-huawei/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/shell.png" alt="华为笔试 - 占位符替换">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-03-15T15:59:59.000Z">2020-03-15</time></div>
+                    <a href="/2020/03/15/mask-huawei/" class="title has-link-black-ter is-size-6 has-text-weight-normal">华为笔试 - 占位符替换</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Huawei/">Huawei</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2020/03/06/spiral-order/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/cta.png" alt="LeetCode 54 - Spiral Order">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-03-06T06:59:59.000Z">2020-03-06</time></div>
+                    <a href="/2020/03/06/spiral-order/" class="title has-link-black-ter is-size-6 has-text-weight-normal">LeetCode 54 - Spiral Order</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/LeetCode/">LeetCode</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2020/03/05/big_num_mul/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/thumbnail.svg" alt="LeetCode 43 - 大数乘法">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-03-05T06:57:59.000Z">2020-03-05</time></div>
+                    <a href="/2020/03/05/big_num_mul/" class="title has-link-black-ter is-size-6 has-text-weight-normal">LeetCode 43 - 大数乘法</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/LeetCode/">LeetCode</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2020/03/01/dca/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/wb.png" alt="DCA - 对AES侧信道分析的总结">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-03-01T15:59:59.000Z">2020-03-01</time></div>
+                    <a href="/2020/03/01/dca/" class="title has-link-black-ter is-size-6 has-text-weight-normal">DCA - 对AES侧信道分析的总结</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Cryptography/">Cryptography</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+    </div>
+</div>
+    
+        <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            归档
+        </h3>
+        <ul class="menu-list">
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">4</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/02/">
+                <span class="level-start">
+                    <span class="level-item">二月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2018/12/">
+                <span class="level-start">
+                    <span class="level-item">十二月 2018</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">3</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2018/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2018</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2018/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2018</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2017/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2017</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">7</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2017/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2017</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">6</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/1970/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 1970</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+    
+        <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                标签
+            </h3>
+            <div class="field is-grouped is-grouped-multiline">
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Algorithms/">
+                        <span class="tag">Algorithms</span>
+                        <span class="tag is-grey">6</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/DFS/">
+                        <span class="tag">DFS</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Data-Structure/">
+                        <span class="tag">Data Structure</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/HAProxy/">
+                        <span class="tag">HAProxy</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/LeetCode/">
+                        <span class="tag">LeetCode</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/Nginx/">
+                        <span class="tag">Nginx</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/computer-system/">
+                        <span class="tag">computer system</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/crypto/">
+                        <span class="tag">crypto</span>
+                        <span class="tag is-grey">3</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/ftp/">
+                        <span class="tag">ftp</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/homework/">
+                        <span class="tag">homework</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/lab/">
+                        <span class="tag">lab</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/test/">
+                        <span class="tag">test</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/动态规划/">
+                        <span class="tag">动态规划</span>
+                        <span class="tag is-grey">2</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/发发小癫/">
+                        <span class="tag">发发小癫</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/坐标拾取/">
+                        <span class="tag">坐标拾取</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/水货软文/">
+                        <span class="tag">水货软文</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+                <div class="control">
+                    <a class="tags has-addons" href="/tags/网盘系统/">
+                        <span class="tag">网盘系统</span>
+                        <span class="tag is-grey">1</span>
+                    </a>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</div>
+    
+    
+</div>
+
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    improvedNPC
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 improvedNPC&nbsp;
+                Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> & <a
+                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+<script>
+var IcarusThemeSettings = {
+    site: {
+        url: 'https://blog.wxk.me',
+        external_link: {"enable":true,"exclude":[]}
+    },
+    article: {
+        highlight: {
+            clipboard: true,
+            fold: 'unfolded'
+        }
+    }
+};
+</script>
+
+
+<script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+
+
+
+
+
+<script src="/js/animation.js"></script>
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+<script src="/js/gallery.js" defer></script>
+
+
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>
